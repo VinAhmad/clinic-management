@@ -13,21 +13,21 @@ class UserSeeder extends Seeder
         User::insert([
             // Admin (hanya 1)
             [
-                'name' => 'Admin Klinik',
+                'name' => 'Admin',
                 'email' => 'admin@clinic.com',
                 'email_verified_at' => now(),
-                'password' => Hash::make('password'),
+                'password' => 'Admin123',
                 'role' => 'admin',
                 'phone' => '081234567890',
                 'gender' => 'male',
                 'address' => 'Jl. Admin No.1, Jakarta',
-                'specialization' => null, // Admin tidak punya spesialisasi
+                'specialization' => null,
                 'remember_token' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
 
-            // Doctor (1 dokter)
+            // Doctor
             [
                 'name' => 'Dr. Budi Santoso',
                 'email' => 'dr.budi@clinic.com',
@@ -37,13 +37,41 @@ class UserSeeder extends Seeder
                 'phone' => '081234567891',
                 'gender' => 'male',
                 'address' => 'Jl. Dokter No.10, Jakarta',
-                'specialization' => 'Cardiology', // Spesialisasi dokter
+                'specialization' => 'Cardiology',
+                'remember_token' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Dr. Siti Aminah',
+                'email' => 'dr.siti@clinic.com',
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+                'role' => 'doctor',
+                'phone' => '081234567895',
+                'gender' => 'female',
+                'address' => 'Jl. Dokter No.11, Jakarta',
+                'specialization' => 'Dermatology',
+                'remember_token' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Dr. Ahmad Fauzi',
+                'email' => 'dr.ahmad@clinic.com',
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+                'role' => 'doctor',
+                'phone' => '081234567896',
+                'gender' => 'male',
+                'address' => 'Jl. Dokter No.12, Jakarta',
+                'specialization' => 'Neurology',
                 'remember_token' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
 
-            // Patients (3 pasien manual)
+            // Patients
             [
                 'name' => 'Andi Wijaya',
                 'email' => 'andi.wijaya@example.com',
