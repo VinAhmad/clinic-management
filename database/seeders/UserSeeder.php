@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
                 'name' => 'Admin',
                 'email' => 'admin@clinic.com',
                 'email_verified_at' => now(),
-                'password' => 'Admin123',
+                'password' => bcrypt('Admin123'),
                 'role' => 'admin',
                 'phone' => '081234567890',
                 'gender' => 'male',

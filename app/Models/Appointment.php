@@ -12,7 +12,7 @@ class Appointment extends Model
     protected $fillable = [
         'doctor_id',
         'patient_id',
-        'appintment_date',
+        'appointment_date',
         'status',
         'notes',
         'fee',
@@ -28,13 +28,13 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'patient_id')->where('role', 'patient');
     }
 
-    public function medicalRecored()
+    public function medicalRecord()
     {
         return $this->hasOne(MedicalRecord::class);
     }
 
     public function payment()
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasOne(Payment::class);
     }
 }

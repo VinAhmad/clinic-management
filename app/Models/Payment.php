@@ -11,6 +11,8 @@ class Payment extends Model
 
     protected $fillable = [
         'appointment_id',
+        'doctor_id',
+        'patient_id',
         'amount',
         'status',
         'payment_method',
@@ -26,5 +28,10 @@ class Payment extends Model
     public function patient()
     {
         return $this->belongsTo(User::class, 'patient_id')->where('role', 'patient');
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id')->where('role', 'doctor');
     }
 }

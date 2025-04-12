@@ -62,16 +62,16 @@ class User extends Authenticatable
         return $query->where('role', 'doctor');
     }
 
-    public function schedule()
+    public function schedules()
     {
         return $this->hasMany(Schedule::class, 'doctor_id');
     }
 
-    public function doctorAppoinments() {
+    public function doctorAppointments() {
         return $this->hasMany(Appointment::class, 'doctor_id');
     }
 
-    public function patientAppoinments() {
+    public function patientAppointments() {
         return $this->hasMany(Appointment::class, 'patient_id');
     }
 
