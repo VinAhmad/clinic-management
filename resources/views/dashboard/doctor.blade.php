@@ -90,7 +90,7 @@
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
-                        <a href="{{ route('schedules.index') }}" class="text-indigo-600 hover:text-indigo-800">Manage Schedule</a>
+                        <a href="{{ route('schedules.index') }}" class="text-indigo-600 hover:text-indigo-800">Manage Schedules</a>
                     </div>
 
                     @if($weeklySchedules->count() > 0)
