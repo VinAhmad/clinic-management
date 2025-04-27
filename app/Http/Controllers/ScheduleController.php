@@ -3,63 +3,132 @@
 namespace App\Http\Controllers;
 
 use App\Models\Schedule;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ScheduleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $doctors = User::where('role', 'doctor')->get();
+            return view('schedules.admin-index', compact('doctors'));
+        } else {
+            $schedules = Schedule::where('doctor_id', $user->id)->get();
+            return view('schedules.doctor-index', compact('schedules'));
+        }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    public function showDoctorSchedules(User $doctor)
+    {
+        $schedules = Schedule::where('doctor_id', $doctor->id)->get();
+
+        return view('schedules.show', compact('doctor', 'schedules'));
+    }
+
     public function create()
     {
-        //
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $doctors = User::where('role', 'doctor')->get();
+            return view('schedules.create', compact('doctors'));
+        } else {
+            return view('schedules.create');
+        }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'doctor_id' => 'required|exists:users,id',
+            'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_available' => 'boolean',
+        ]);
+
+        // Check for overlapping schedules
+        $existingSchedule = Schedule::where('doctor_id', $validated['doctor_id'])
+            ->where('day', $validated['day'])
+            ->where(function($query) use ($validated) {
+                $query->whereBetween('start_time', [$validated['start_time'], $validated['end_time']])
+                    ->orWhereBetween('end_time', [$validated['start_time'], $validated['end_time']])
+                    ->orWhere(function($q) use ($validated) {
+                        $q->where('start_time', '<=', $validated['start_time'])
+                            ->where('end_time', '>=', $validated['end_time']);
+                    });
+            })
+            ->first();
+
+        if ($existingSchedule) {
+            return back()
+                ->withErrors(['overlap' => 'This schedule overlaps with an existing schedule.'])
+                ->withInput();
+        }
+
+        Schedule::create($validated);
+
+        return redirect()->route('schedules.index')
+            ->with('success', 'Schedule created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Schedule $schedule)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Schedule $schedule)
     {
-        //
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $doctors = User::where('role', 'doctor')->get();
+            return view('schedules.edit', compact('schedule', 'doctors'));
+        } else {
+            return view('schedules.edit', compact('schedule'));
+        }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Schedule $schedule)
     {
-        //
+        $validated = $request->validate([
+            'doctor_id' => 'required|exists:users,id',
+            'day' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_available' => 'boolean',
+        ]);
+
+        // Check for overlapping schedules (excluding this schedule)
+        $existingSchedule = Schedule::where('doctor_id', $validated['doctor_id'])
+            ->where('day', $validated['day'])
+            ->where('id', '!=', $schedule->id)
+            ->where(function($query) use ($validated) {
+                $query->whereBetween('start_time', [$validated['start_time'], $validated['end_time']])
+                    ->orWhereBetween('end_time', [$validated['start_time'], $validated['end_time']])
+                    ->orWhere(function($q) use ($validated) {
+                        $q->where('start_time', '<=', $validated['start_time'])
+                            ->where('end_time', '>=', $validated['end_time']);
+                    });
+            })
+            ->first();
+
+        if ($existingSchedule) {
+            return back()
+                ->withErrors(['overlap' => 'This schedule overlaps with an existing schedule.'])
+                ->withInput();
+        }
+
+        $schedule->update($validated);
+
+        return redirect()->route('schedules.index')
+            ->with('success', 'Schedule updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Schedule $schedule)
     {
-        //
+        $schedule->delete();
+
+        return redirect()->route('schedules.index')
+            ->with('success', 'Schedule deleted successfully.');
     }
 }
