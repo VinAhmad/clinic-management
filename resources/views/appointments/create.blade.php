@@ -88,6 +88,7 @@
                             </div>
                         </div>
 
+                        @if(Auth::user()->role === 'admin' || Auth::user()->role === 'doctor')
                         <div class="form-group row mb-3">
                             <label for="fee" class="col-md-4 col-form-label text-md-right">{{ __('Consultation Fee') }}</label>
 
@@ -101,6 +102,9 @@
                                 @enderror
                             </div>
                         </div>
+                        @else
+                        <input type="hidden" name="fee" value="0">
+                        @endif
 
                         <div class="form-group row mb-3">
                             <label for="notes" class="col-md-4 col-form-label text-md-right">{{ __('Notes') }}</label>
@@ -140,7 +144,7 @@
         function loadTimeSlots() {
             const doctorId = $('#doctor_id').val();
             const date = $('#appointment_date').val();
-            
+
             if (doctorId && date) {
                 $.ajax({
                     url: "{{ route('appointments.slots') }}",
@@ -153,10 +157,10 @@
                         const timeSlotSelect = $('#appointment_time');
                         timeSlotSelect.empty();
                         timeSlotSelect.prop('disabled', false);
-                        
+
                         if (response.slots.length > 0) {
                             timeSlotSelect.append('<option value="">Select Time Slot</option>');
-                            
+
                             response.slots.forEach(function(slot) {
                                 timeSlotSelect.append(`<option value="${slot.start}">${slot.formatted}</option>`);
                             });
@@ -167,7 +171,7 @@
                 });
             }
         }
-        
+
         $('#doctor_id, #appointment_date').change(loadTimeSlots);
     });
 </script>

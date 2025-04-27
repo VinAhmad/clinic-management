@@ -9,25 +9,21 @@ class SchedulesSeeder extends Seeder
 {
     public function run(): void
     {
-        Schedule::insert([
-            [
-                'doctor_id' => 2,
-                'day' => 'Monday',
-                'start_time' => '08:00:00',
-                'end_time' => '14:00:00',
-                'is_available' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'doctor_id' => 2,
-                'day' => 'Wednesday',
-                'start_time' => '10:00:00',
-                'end_time' => '16:00:00',
-                'is_available' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
+        $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $doctorIds = [2, 3, 4]; // Based on your UserSeeder
+
+        foreach ($doctorIds as $doctorId) {
+            foreach ($days as $day) {
+                Schedule::create([
+                    'doctor_id' => $doctorId,
+                    'day' => $day,
+                    'start_time' => '09:00',
+                    'end_time' => '17:00',
+                    'is_available' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 }

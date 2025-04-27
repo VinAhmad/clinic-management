@@ -92,16 +92,46 @@ class DashboardController extends Controller
 
         $totalAppointments = Appointment::where('doctor_id', $doctor->id)->count();
 
+        // Explicitly query the day of week using lowercase
+        $today = strtolower(now()->format('l')); // This gives us 'monday', 'tuesday', etc.
+
         $todaySchedule = Schedule::where('doctor_id', $doctor->id)
-            ->where('day', strtolower(now()->format('l')))
+            ->where('day', $today)
             ->first();
+
+        // Debug the schedule query
+        if (!$todaySchedule) {
+            // Try to find any schedule for this doctor
+            $anySchedule = Schedule::where('doctor_id', $doctor->id)->first();
+            // If there's any schedule but not for today, it's likely a day mismatch
+            if ($anySchedule) {
+                // Create a default schedule for today to prevent null values
+                $todaySchedule = new Schedule();
+                $todaySchedule->start_time = '09:00';
+                $todaySchedule->end_time = '17:00';
+            }
+        }
+
+        // Get all schedules for this doctor
+        $weeklySchedules = Schedule::where('doctor_id', $doctor->id)
+            ->orderByRaw("CASE
+                WHEN day = 'monday' THEN 1
+                WHEN day = 'tuesday' THEN 2
+                WHEN day = 'wednesday' THEN 3
+                WHEN day = 'thursday' THEN 4
+                WHEN day = 'friday' THEN 5
+                WHEN day = 'saturday' THEN 6
+                WHEN day = 'sunday' THEN 7
+                ELSE 8 END")
+            ->get();
 
         return view('dashboard.doctor', compact(
             'todayAppointments',
             'upcomingAppointments',
             'totalPatients',
             'totalAppointments',
-            'todaySchedule'
+            'todaySchedule',
+            'weeklySchedules'
         ));
     }
 

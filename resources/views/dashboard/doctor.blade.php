@@ -28,7 +28,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Today's Schedule</h3>
 
-                    @if($todaySchedule)
+                    @if(isset($todaySchedule) && $todaySchedule->id)
                         <div class="bg-blue-50 p-4 mb-4 rounded">
                             <p class="text-blue-800">Working Hours:
                                 <span class="font-semibold">{{ Carbon\Carbon::parse($todaySchedule->start_time)->format('h:i A') }} -
@@ -36,8 +36,11 @@
                             </p>
                         </div>
                     @else
-                        <div class="bg-gray-50 p-4 rounded text-center">
-                            No schedule set for today.
+                        <div class="bg-yellow-50 p-4 rounded text-center">
+                            <p class="text-yellow-800 mb-2">No schedule set for today ({{ now()->format('l') }}).</p>
+                            <a href="{{ route('schedules.create') }}" class="text-indigo-600 hover:text-indigo-800">
+                                <span class="underline">Set up your schedule</span>
+                            </a>
                         </div>
                     @endif
 
@@ -77,6 +80,52 @@
                     @else
                         <div class="bg-gray-50 p-4 rounded text-center">
                             No appointments scheduled for today.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Weekly Schedule -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Weekly Schedule</h3>
+                        <a href="{{ route('schedules.index') }}" class="text-indigo-600 hover:text-indigo-800">Manage Schedule</a>
+                    </div>
+
+                    @if($weeklySchedules->count() > 0)
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($weeklySchedules as $schedule)
+                                    <tr class="{{ strtolower(now()->format('l')) === $schedule->day ? 'bg-blue-50' : '' }}">
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ ucfirst($schedule->day) }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ Carbon\Carbon::parse($schedule->start_time)->format('h:i A') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ Carbon\Carbon::parse($schedule->end_time)->format('h:i A') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $schedule->is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                {{ $schedule->is_available ? 'Available' : 'Not Available' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="bg-yellow-50 p-4 rounded text-center">
+                            <p class="text-yellow-800 mb-2">You haven't set up your weekly schedule yet.</p>
+                            <a href="{{ route('schedules.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                                Set Up Schedule
+                            </a>
                         </div>
                     @endif
                 </div>
