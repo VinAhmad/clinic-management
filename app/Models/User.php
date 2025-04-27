@@ -52,38 +52,53 @@ class User extends Authenticatable
         ];
     }
 
-    public function scopePatients($query)
-    {
-        return $query->where('role', 'patient');
-    }
-
-    public function scopeDoctors($query)
-    {
-        return $query->where('role', 'doctor');
-    }
-
-    public function schedules()
+    public function doctorSchedules()
     {
         return $this->hasMany(Schedule::class, 'doctor_id');
     }
 
-    public function doctorAppointments() {
+    public function doctorAppointments()
+    {
         return $this->hasMany(Appointment::class, 'doctor_id');
     }
 
-    public function patientAppointments() {
+    public function patientAppointments()
+    {
         return $this->hasMany(Appointment::class, 'patient_id');
     }
 
-    public function doctorMedicalRecords() {
+    public function doctorMedicalRecords()
+    {
         return $this->hasMany(MedicalRecord::class, 'doctor_id');
     }
 
-    public function patientMedicalRecords() {
+    public function patientMedicalRecords()
+    {
         return $this->hasMany(MedicalRecord::class, 'patient_id');
     }
 
-    public function payments() {
+    public function doctorPayments()
+    {
+        return $this->hasMany(Payment::class, 'doctor_id');
+    }
+
+    public function patientPayments()
+    {
         return $this->hasMany(Payment::class, 'patient_id');
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isDoctor()
+    {
+        return $this->role === 'doctor';
+    }
+
+    public function isPatient()
+    {
+        return $this->role === 'patient';
     }
 }

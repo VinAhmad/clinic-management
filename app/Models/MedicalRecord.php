@@ -19,6 +19,10 @@ class MedicalRecord extends Model
         'next_appointment'
     ];
 
+    protected $casts = [
+        'next_appointment' => 'datetime',
+    ];
+
     public function appointment()
     {
         return $this->belongsTo(Appointment::class);
@@ -26,11 +30,11 @@ class MedicalRecord extends Model
 
     public function patient()
     {
-        return $this->belongsTo(User::class, 'patient_id')->where('role', 'patient');
+        return $this->belongsTo(User::class, 'patient_id');
     }
 
     public function doctor()
     {
-        return $this->belongsTo(User::class, 'doctor_id')->where('role', 'doctor');
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 }

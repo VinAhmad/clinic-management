@@ -17,8 +17,12 @@ class Schedule extends Model
         'is_available',
     ];
 
+    protected $casts = [
+        'is_available' => 'boolean',
+    ];
+
     public function doctor()
     {
-        return $this->belongsTo(User::class, 'doctor_id')->where('role', 'doctor');
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 }

@@ -20,18 +20,23 @@ class Payment extends Model
         'payment_date',
     ];
 
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'payment_date' =>  'datetime',
+    ];
+
     public function appointment()
     {
         return $this->belongsTo(Appointment::class);
     }
 
-    public function patient()
-    {
-        return $this->belongsTo(User::class, 'patient_id')->where('role', 'patient');
-    }
-
     public function doctor()
     {
-        return $this->belongsTo(User::class, 'doctor_id')->where('role', 'doctor');
+        return $this->belongsTo(User::class, 'doctor_id');
+    }
+
+    public function patient()
+    {
+        return $this->belongsTo(User::class, 'patient_id');
     }
 }

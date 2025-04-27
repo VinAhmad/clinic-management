@@ -10,22 +10,27 @@ class Appointment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'doctor_id',
         'patient_id',
+        'doctor_id',
         'appointment_date',
         'status',
         'notes',
         'fee',
     ];
 
-    public function doctor()
-    {
-        return $this->belongsTo(User::class, 'doctor_id')->where('role', 'doctor');
-    }
+    protected $casts = [
+        'appointment_date' => 'datetime',
+        'fee' => 'decimal:2',
+    ];
 
     public function patient()
     {
-        return $this->belongsTo(User::class, 'patient_id')->where('role', 'patient');
+        return $this->belongsTo(User::class, 'patient_id');
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 
     public function medicalRecord()
