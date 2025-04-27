@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\PDF;
 
 class PaymentController extends Controller
 {
@@ -138,9 +139,17 @@ class PaymentController extends Controller
 
         $payment->load(['doctor', 'patient', 'appointment']);
 
-        // In a real application, you might use a PDF library to generate a proper invoice
+        // Generate PDF invoice using the DOMPDF library
+        $pdf = PDF::loadView('payments.invoice_pdf', compact('payment'));
 
-        return view('payments.invoice', compact('payment'));
+        // Set paper size and orientation
+        $pdf->setPaper('a4', 'portrait');
+
+        // Generate unique filename for the invoice
+        $filename = 'invoice-' . $payment->id . '-' . date('Y-m-d') . '.pdf';
+
+        // Return the PDF for download
+        return $pdf->download($filename);
     }
 
     public function reports()
