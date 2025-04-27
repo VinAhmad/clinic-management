@@ -8,7 +8,7 @@
         </div>
         <div class="col-md-6 text-end">
             <a href="{{ route('schedules.create') }}" class="btn btn-primary">
-                <i class="fa fa-plus"></i> Create New Schedule
+                <i class="fas fa-plus"></i> Create New Schedule
             </a>
         </div>
     </div>
@@ -50,18 +50,16 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ route('schedules.edit', $schedule->id) }}" class="btn btn-warning btn-sm">
-                                            <i class="fa fa-edit"></i> Edit
-                                        </a>
-                                        <form action="{{ route('schedules.destroy', $schedule->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this schedule?');" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm">
-                                                <i class="fa fa-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <a href="{{ route('schedules.edit', $schedule->id) }}" class="btn btn-warning btn-sm me-1">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <form action="{{ route('schedules.destroy', $schedule->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this schedule?');">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty

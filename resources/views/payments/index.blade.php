@@ -1,16 +1,22 @@
 <!-- resources/views/payments/index.blade.php -->
 @extends('layouts.app')
+
 @section('content')
 <div class="container">
     <div class="row mb-3">
-        <div class="col-md-6">
-            <h2>Payments</h2>
+        <div class="col-md-8">
+            <h2>{{ __('Payments') }}</h2>
         </div>
-        <div class="col-md-6 text-end">
+        @if(Auth::user()->role === 'admin')
+        <div class="col-md-4 text-end">
             <a href="{{ route('payments.create') }}" class="btn btn-primary">
-                <i class="fa fa-plus"></i> Create New Payment
+                <i class="fas fa-plus"></i> {{ __('New Payment') }}
+            </a>
+            <a href="{{ route('payments.reports') }}" class="btn btn-info">
+                <i class="fas fa-chart-line"></i> {{ __('Reports') }}
             </a>
         </div>
+        @endif
     </div>
 
     @if(session('success'))
@@ -21,69 +27,78 @@
 
     <div class="card">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Patient</th>
-                            <th>Doctor</th>
-                            <th>Amount</th>
-                            <th>Payment Method</th>
-                            <th>Status</th>
-                            <th>Payment Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($payments as $payment)
+            @if($payments->isEmpty())
+                <div class="alert alert-info">
+                    {{ __('No payments found.') }}
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
                             <tr>
-                                <td>{{ $payment->id }}</td>
-                                <td>{{ $payment->patient->name ?? 'N/A' }}</td>
-                                <td>{{ $payment->doctor->name ?? 'N/A' }}</td>
-                                <td>${{ number_format($payment->amount, 2) }}</td>
-                                <td>{{ $payment->payment_method }}</td>
-                                <td>
-                                    @if($payment->status == 'Completed')
-                                        <span class="badge bg-success">{{ $payment->status }}</span>
-                                    @elseif($payment->status == 'Pending')
-                                        <span class="badge bg-warning">{{ $payment->status }}</span>
-                                    @elseif($payment->status == 'Failed')
-                                        <span class="badge bg-danger">{{ $payment->status }}</span>
-                                    @elseif($payment->status == 'Refunded')
-                                        <span class="badge bg-info">{{ $payment->status }}</span>
-                                    @else
-                                        <span class="badge bg-secondary">{{ $payment->status }}</span>
-                                    @endif
-                                </td>
-                                <td>{{ $payment->payment_date }}</td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ route('payments.show', $payment->id) }}" class="btn btn-info btn-sm">
-                                            <i class="fa fa-eye"></i> View
-                                        </a>
-                                        <a href="{{ route('payments.edit', $payment->id) }}" class="btn btn-warning btn-sm">
-                                            <i class="fa fa-edit"></i> Edit
-                                        </a>
-                                        <form action="{{ route('payments.destroy', $payment->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this payment?');" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm">
-                                                <i class="fa fa-trash"></i> Delete
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+                                <th>{{ __('ID') }}</th>
+                                <th>{{ __('Date') }}</th>
+                                <th>{{ __('Patient') }}</th>
+                                <th>{{ __('Doctor') }}</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Method') }}</th>
+                                <th>{{ __('Actions') }}</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center">No payments found</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            {{ $payments->links() }}
+                        </thead>
+                        <tbody>
+                            @foreach($payments as $payment)
+                                <tr>
+                                    <td>{{ $payment->id }}</td>
+                                    <td>{{ $payment->created_at->format('M d, Y') }}</td>
+                                    <td>{{ $payment->patient->name }}</td>
+                                    <td>Dr. {{ $payment->doctor->name }}</td>
+                                    <td>${{ number_format($payment->amount, 2) }}</td>
+                                    <td>
+                                        @if($payment->status == 'pending')
+                                            <span class="badge bg-warning">{{ __('Pending') }}</span>
+                                        @elseif($payment->status == 'paid')
+                                            <span class="badge bg-success">{{ __('Paid') }}</span>
+                                        @elseif($payment->status == 'refunded')
+                                            <span class="badge bg-info">{{ __('Refunded') }}</span>
+                                        @elseif($payment->status == 'failed')
+                                            <span class="badge bg-danger">{{ __('Failed') }}</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $payment->payment_method ? ucwords(str_replace('_', ' ', $payment->payment_method)) : 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ route('payments.show', $payment) }}" class="btn btn-sm btn-info" title="View">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        
+                                        @if(Auth::user()->role === 'admin' || (Auth::user()->role === 'patient' && Auth::id() === $payment->patient_id && $payment->status === 'pending'))
+                                            <a href="{{ route('payments.edit', $payment) }}" class="btn btn-sm btn-primary" title="Edit">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                        @endif
+                                        
+                                        @if($payment->status === 'paid')
+                                            <a href="{{ route('payments.invoice', $payment) }}" class="btn btn-sm btn-success" title="Download Invoice">
+                                                <i class="fas fa-file-invoice"></i> Invoice
+                                            </a>
+                                        @endif
+                                        
+                                        @if(Auth::user()->role === 'patient' && $payment->status === 'pending')
+                                            <a href="{{ route('payments.process', $payment) }}" class="btn btn-sm btn-warning" title="Pay Now">
+                                                <i class="fas fa-credit-card"></i> Pay Now
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex justify-content-center mt-3">
+                    {{ $payments->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </div>

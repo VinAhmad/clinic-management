@@ -19,6 +19,29 @@
         
         <!-- Additional Styles -->
         @stack('styles')
+
+        <!-- Add Font Awesome -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+        <!-- Fix for button text display -->
+        <style>
+            .btn i {
+                margin-right: 5px;
+                vertical-align: middle;
+            }
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            .me-1 {
+                margin-right: 0.25rem !important;
+            }
+        </style>
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">

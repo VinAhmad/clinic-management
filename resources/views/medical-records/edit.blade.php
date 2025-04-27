@@ -1,55 +1,45 @@
 <!-- resources/views/medical-records/edit.blade.php -->
 @extends('layouts.app')
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
-                    <h3>Edit Medical Record</h3>
-                </div>
+                <div class="card-header">{{ __('Edit Medical Record') }}</div>
+
                 <div class="card-body">
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    <form method="POST" action="{{ route('medical-records.update', $medicalRecord->id) }}">
+                    <form method="POST" action="{{ route('medical-records.update', $medicalRecord) }}">
                         @csrf
                         @method('PUT')
+
                         <div class="form-group row mb-3">
-                            <label for="appointment_id" class="col-md-4 col-form-label text-md-right">Appointment</label>
+                            <label class="col-md-4 col-form-label text-md-right">{{ __('Patient') }}</label>
                             <div class="col-md-6">
-                                <select id="appointment_id" class="form-control @error('appointment_id') is-invalid @enderror" name="appointment_id" required>
-                                    <option value="">Select Appointment</option>
-                                    @foreach($appointments as $appointment)
-                                        <option value="{{ $appointment->id }}" 
-                                            {{ (old('appointment_id') ?? $medicalRecord->appointment_id) == $appointment->id ? 'selected' : '' }}
-                                            data-patient-id="{{ $appointment->patient_id }}"
-                                            data-doctor-id="{{ $appointment->doctor_id }}">
-                                            ID: {{ $appointment->id }} - {{ $appointment->patient->name ?? 'N/A' }} with Dr. {{ $appointment->doctor->name ?? 'N/A' }} on {{ $appointment->appointment_date }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('appointment_id')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <input type="text" readonly class="form-control-plaintext" value="{{ $medicalRecord->patient->name }}">
                             </div>
                         </div>
 
-                        <input type="hidden" name="patient_id" id="patient_id" value="{{ old('patient_id') ?? $medicalRecord->patient_id }}">
-                        <input type="hidden" name="doctor_id" id="doctor_id" value="{{ old('doctor_id') ?? $medicalRecord->doctor_id }}">
+                        <div class="form-group row mb-3">
+                            <label class="col-md-4 col-form-label text-md-right">{{ __('Doctor') }}</label>
+                            <div class="col-md-6">
+                                <input type="text" readonly class="form-control-plaintext" value="Dr. {{ $medicalRecord->doctor->name }}">
+                            </div>
+                        </div>
 
                         <div class="form-group row mb-3">
-                            <label for="diagnosis" class="col-md-4 col-form-label text-md-right">Diagnosis</label>
+                            <label class="col-md-4 col-form-label text-md-right">{{ __('Appointment Date') }}</label>
                             <div class="col-md-6">
-                                <textarea id="diagnosis" class="form-control @error('diagnosis') is-invalid @enderror" name="diagnosis" required>{{ old('diagnosis') ?? $medicalRecord->diagnosis }}</textarea>
+                                <input type="text" readonly class="form-control-plaintext" value="{{ $medicalRecord->appointment->appointment_date->format('M d, Y h:i A') }}">
+                            </div>
+                        </div>
+
+                        <div class="form-group row mb-3">
+                            <label for="diagnosis" class="col-md-4 col-form-label text-md-right">{{ __('Diagnosis') }}</label>
+
+                            <div class="col-md-6">
+                                <textarea id="diagnosis" class="form-control @error('diagnosis') is-invalid @enderror" name="diagnosis" required rows="3">{{ old('diagnosis', $medicalRecord->diagnosis) }}</textarea>
+
                                 @error('diagnosis')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
@@ -59,9 +49,11 @@
                         </div>
 
                         <div class="form-group row mb-3">
-                            <label for="prescription" class="col-md-4 col-form-label text-md-right">Prescription</label>
+                            <label for="prescription" class="col-md-4 col-form-label text-md-right">{{ __('Prescription') }}</label>
+
                             <div class="col-md-6">
-                                <textarea id="prescription" class="form-control @error('prescription') is-invalid @enderror" name="prescription">{{ old('prescription') ?? $medicalRecord->prescription }}</textarea>
+                                <textarea id="prescription" class="form-control @error('prescription') is-invalid @enderror" name="prescription" required rows="3">{{ old('prescription', $medicalRecord->prescription) }}</textarea>
+
                                 @error('prescription')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
@@ -71,10 +63,26 @@
                         </div>
 
                         <div class="form-group row mb-3">
-                            <label for="treatment_plan" class="col-md-4 col-form-label text-md-right">Treatment Plan</label>
+                            <label for="treatment_plan" class="col-md-4 col-form-label text-md-right">{{ __('Treatment Plan') }}</label>
+
                             <div class="col-md-6">
-                                <textarea id="treatment_plan" class="form-control @error('treatment_plan') is-invalid @enderror" name="treatment_plan">{{ old('treatment_plan') ?? $medicalRecord->treatment_plan }}</textarea>
+                                <textarea id="treatment_plan" class="form-control @error('treatment_plan') is-invalid @enderror" name="treatment_plan" rows="3">{{ old('treatment_plan', $medicalRecord->treatment_plan) }}</textarea>
+
                                 @error('treatment_plan')
+                                    <span class="invalid-feedback" role="alert">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="form-group row mb-3">
+                            <label for="next_appointment" class="col-md-4 col-form-label text-md-right">{{ __('Next Appointment') }}</label>
+
+                            <div class="col-md-6">
+                                <input id="next_appointment" type="date" class="form-control @error('next_appointment') is-invalid @enderror" name="next_appointment" value="{{ old('next_appointment', $medicalRecord->next_appointment ? $medicalRecord->next_appointment->format('Y-m-d') : '') }}">
+
+                                @error('next_appointment')
                                     <span class="invalid-feedback" role="alert">
                                         <strong>{{ $message }}</strong>
                                     </span>
@@ -85,10 +93,10 @@
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
                                 <button type="submit" class="btn btn-primary">
-                                    Update Medical Record
+                                    {{ __('Update Record') }}
                                 </button>
-                                <a href="{{ route('medical-records.index') }}" class="btn btn-secondary">
-                                    Cancel
+                                <a href="{{ route('medical-records.show', $medicalRecord) }}" class="btn btn-secondary">
+                                    {{ __('Cancel') }}
                                 </a>
                             </div>
                         </div>
@@ -98,20 +106,4 @@
         </div>
     </div>
 </div>
-
-@push('scripts')
-<script>
-    $(document).ready(function() {
-        // Auto-fill patient_id and doctor_id based on selected appointment
-        $('#appointment_id').change(function() {
-            var selectedOption = $(this).find('option:selected');
-            var patientId = selectedOption.data('patient-id');
-            var doctorId = selectedOption.data('doctor-id');
-            
-            $('#patient_id').val(patientId);
-            $('#doctor_id').val(doctorId);
-        });
-    });
-</script>
-@endpush
 @endsection

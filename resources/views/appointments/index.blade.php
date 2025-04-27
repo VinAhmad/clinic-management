@@ -3,67 +3,95 @@
 
 @section('content')
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3>Appointments</h3>
-                        <a href="{{ route('appointments.create') }}" class="btn btn-primary">Create New Appointment</a>
-                    </div>
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2>{{ __('Appointments') }}</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ route('appointments.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {{ __('New Appointment') }}
+            </a>
+        </div>
+    </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="card">
+        <div class="card-body">
+            @if($appointments->isEmpty())
+                <div class="alert alert-info">
+                    {{ __('No appointments found.') }}
                 </div>
-
-                <div class="card-body">
-                    @if (session('success'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
-                    <table class="table table-bordered">
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Patient</th>
-                                <th>Doctor</th>
-                                <th>Date & Time</th>
-                                <th>Status</th>
-                                <th>Fee</th>
-                                <th>Actions</th>
+                                <th>{{ __('ID') }}</th>
+                                <th>{{ __('Date & Time') }}</th>
+                                <th>{{ __('Patient') }}</th>
+                                <th>{{ __('Doctor') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Fee') }}</th>
+                                <th>{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($appointments as $appointment)
+                            @foreach($appointments as $appointment)
                                 <tr>
                                     <td>{{ $appointment->id }}</td>
-                                    <td>{{ $appointment->patient->name ?? 'N/A' }}</td>
-                                    <td>{{ $appointment->doctor->name ?? 'N/A' }}</td>
-                                    <td>{{ $appointment->appointment_date }}</td>
-                                    <td>{{ $appointment->status }}</td>
+                                    <td>{{ $appointment->appointment_date->format('M d, Y h:i A') }}</td>
+                                    <td>{{ $appointment->patient->name }}</td>
+                                    <td>Dr. {{ $appointment->doctor->name }}</td>
+                                    <td>
+                                        @if($appointment->status == 'scheduled')
+                                            <span class="badge bg-primary">{{ __('Scheduled') }}</span>
+                                        @elseif($appointment->status == 'completed')
+                                            <span class="badge bg-success">{{ __('Completed') }}</span>
+                                        @elseif($appointment->status == 'canceled')
+                                            <span class="badge bg-danger">{{ __('Canceled') }}</span>
+                                        @endif
+                                    </td>
                                     <td>${{ number_format($appointment->fee, 2) }}</td>
                                     <td>
-                                        <a href="{{ route('appointments.edit', $appointment->id) }}" class="btn btn-sm btn-primary">Edit</a>
-                                        <a href="{{ route('medical-records.create', ['appointment_id' => $appointment->id]) }}" class="btn btn-sm btn-success">Add Record</a>
-                                        <form action="{{ route('appointments.destroy', $appointment->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this appointment?')">Delete</button>
-                                        </form>
+                                        <a href="{{ route('appointments.show', $appointment) }}" class="btn btn-sm btn-info" title="View">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        
+                                        @if($appointment->status == 'scheduled')
+                                            <a href="{{ route('appointments.edit', $appointment) }}" class="btn btn-sm btn-primary" title="Edit">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            
+                                            @if(Auth::user()->role == 'doctor')
+                                                <a href="{{ route('medical-records.create', ['appointment' => $appointment->id]) }}" class="btn btn-sm btn-success" title="Add Medical Record">
+                                                    <i class="fas fa-notes-medical"></i> Record
+                                                </a>
+                                            @endif
+                                            
+                                            <form action="{{ route('appointments.destroy', $appointment) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Cancel">
+                                                    <i class="fas fa-times"></i> Cancel
+                                                </button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center">No appointments found.</td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
-                    
-                    <div class="mt-3">
-                        {{ $appointments->links() }}
-                    </div>
                 </div>
-            </div>
+                
+                <div class="d-flex justify-content-center mt-3">
+                    {{ $appointments->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </div>
