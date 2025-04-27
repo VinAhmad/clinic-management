@@ -12,8 +12,8 @@ class MedicalRecordsSeeder extends Seeder
         MedicalRecord::insert([
             [
                 'appointment_id' => 1,
-                'patient_id' => 3,
-                'doctor_id' => 2,
+                'patient_id' => 5,  // Andi Wijaya (patient)
+                'doctor_id' => 2,   // Dr. Budi Santoso (doctor)
                 'diagnosis' => 'Infeksi saluran pernapasan ringan',
                 'prescription' => 'Paracetamol, antibiotik',
                 'treatment_plan' => 'Kontrol ulang dalam 1 minggu',
@@ -23,8 +23,8 @@ class MedicalRecordsSeeder extends Seeder
             ],
             [
                 'appointment_id' => 2,
-                'patient_id' => 4,
-                'doctor_id' => 2,
+                'patient_id' => 6,  // Siti Rahma (patient)
+                'doctor_id' => 3,   // Dr. Siti Aminah (doctor)
                 'diagnosis' => 'Diabetes tipe 2',
                 'prescription' => 'Metformin, diet rendah gula',
                 'treatment_plan' => 'Kontrol setiap 2 minggu',
