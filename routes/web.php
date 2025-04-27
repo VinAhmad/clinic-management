@@ -33,7 +33,7 @@ Route::middleware('auth')->group(function () {
 // Appointment routes
 Route::middleware('auth')->group(function () {
     Route::resource('appointments', AppointmentController::class);
-    Route::get('/get-available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('appointments.slots');
+    Route::get('/appointments/slots', [AppointmentController::class, 'getAvailableSlots'])->name('appointments.slots');
 });
 
 // Schedule routes
