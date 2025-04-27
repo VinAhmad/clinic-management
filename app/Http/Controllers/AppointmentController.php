@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 class AppointmentController extends Controller
 {
     public function index()
@@ -168,19 +169,23 @@ class AppointmentController extends Controller
         return view('appointments.show', compact('appointment'));
     }
 
+
     public function edit(Appointment $appointment)
     {
-        $user = Auth::user();
+        // Get the list of doctors (only doctors)
+        $doctors = User::where('role', 'doctor')->get();
 
-        if ($user->role === 'admin') {
-            $doctors = User::where('role', 'doctor')->get();
-            $patients = User::where('role', 'patient')->get();
-
-            return view('appointments.edit', compact('appointment', 'doctors', 'patients'));
+        // If the logged-in user is an admin or doctor, they can select a patient
+        if (auth()->user()->role === 'admin' || auth()->user()->role === 'doctor') {
+            $patients = User::where('role', 'patient')->get(); // Get all patients
         } else {
-            return view('appointments.edit', compact('appointment'));
+            $patients = collect(); // No patients are available for other roles
         }
+
+        // Pass the necessary data to the view
+        return view('appointments.edit', compact('appointment', 'doctors', 'patients'));
     }
+
 
     public function update(Request $request, Appointment $appointment)
     {
