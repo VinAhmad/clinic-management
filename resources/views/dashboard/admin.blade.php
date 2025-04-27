@@ -99,8 +99,12 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($recentAppointments as $appointment)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $appointment->patient->name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $appointment->doctor->name }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ $appointment->patient->role === 'patient' ? $appointment->patient->name : 'N/A' }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{ $appointment->doctor->role === 'doctor' ? $appointment->doctor->name : 'N/A' }}
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $appointment->created_at->format('M d, Y') }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                                             <a href="{{ route('appointments.show', $appointment) }}" class="text-indigo-600 hover:text-indigo-900">View</a>

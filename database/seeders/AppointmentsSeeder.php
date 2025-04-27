@@ -11,8 +11,8 @@ class AppointmentsSeeder extends Seeder
     {
         Appointment::insert([
             [
-                'patient_id' => 3,
-                'doctor_id' => 2,
+                'patient_id' => 5, // Andi Wijaya (patient)
+                'doctor_id' => 2,  // Dr. Budi Santoso (doctor)
                 'appointment_date' => now()->addDays(3),
                 'status' => 'scheduled',
                 'notes' => 'Checkup pertama',
@@ -21,8 +21,8 @@ class AppointmentsSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'patient_id' => 4,
-                'doctor_id' => 2,
+                'patient_id' => 6, // Siti Rahma (patient)
+                'doctor_id' => 3,  // Dr. Siti Aminah (doctor)
                 'appointment_date' => now()->addDays(7),
                 'status' => 'scheduled',
                 'notes' => 'Kontrol setelah operasi',
