@@ -134,7 +134,6 @@ class DashboardController extends Controller
         return view('dashboard.doctor', compact(
             'todayAppointments',
             'upcomingAppointments',
-            'groupedAppointments',
             'totalPatients',
             'completedAppointments',
             'totalAppointments',
