@@ -10,37 +10,54 @@ use Barryvdh\DomPDF\Facade\PDF;
 
 class PaymentController extends Controller
 {
+    // Display all payments for the authenticated user (doctor or patient)
     public function index()
     {
         $user = Auth::user();
         $query = Payment::query();
 
+        // Filter payments by user role
         if ($user->role === 'doctor') {
             $query->where('doctor_id', $user->id);
         } elseif ($user->role === 'patient') {
             $query->where('patient_id', $user->id);
         }
 
+        // Retrieve payments and eager load doctor, patient, and appointment relationships
         $payments = $query->with(['doctor', 'patient', 'appointment'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return view('payments.index', compact('payments'));
     }
+    public function pay(Payment $payment)
+    {
+        $user = Auth::user();
 
+    // Check if user has permission to make the payment
+        if ($user->role === 'doctor' && $payment->doctor_id !== $user->id) {
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to make this payment.');
+        }
+
+        if ($user->role === 'patient' && $payment->patient_id !== $user->id) {
+         return redirect()->route('dashboard')->with('error', 'You are not authorized to make this payment.');
+        }
+
+        return view('payments.pay', compact('payment')); // Payment view for user to confirm payment
+    }
+
+    // Show payment details for the given payment
     public function show(Payment $payment)
     {
         $user = Auth::user();
 
         // Check if user has permission to view this payment
         if ($user->role === 'doctor' && $payment->doctor_id !== $user->id) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to view this payment.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to view this payment.');
         }
 
         if ($user->role === 'patient' && $payment->patient_id !== $user->id) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to view this payment.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to view this payment.');
         }
 
         $payment->load(['doctor', 'patient', 'appointment']);
@@ -48,21 +65,19 @@ class PaymentController extends Controller
         return view('payments.show', compact('payment'));
     }
 
+    // Show the edit form for the given payment
     public function edit(Payment $payment)
     {
         $user = Auth::user();
 
         // Only admin and patient can edit payments
         if ($user->role === 'doctor') {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to edit payments.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to edit payments.');
         }
 
         // Patient can only edit their own pending payments
-        if ($user->role === 'patient' &&
-            ($payment->patient_id !== $user->id || $payment->status !== 'pending')) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You can only edit your pending payments.');
+        if ($user->role === 'patient' && ($payment->patient_id !== $user->id || $payment->status !== 'pending')) {
+            return redirect()->route('dashboard')->with('error', 'You can only edit your pending payments.');
         }
 
         $payment->load(['doctor', 'patient', 'appointment']);
@@ -71,10 +86,12 @@ class PaymentController extends Controller
         return view('payments.edit', compact('payment', 'paymentMethods'));
     }
 
+    // Update payment details
     public function update(Request $request, Payment $payment)
     {
         $user = Auth::user();
 
+        // Validation
         $validated = $request->validate([
             'payment_method' => 'required|string',
             'transaction_id' => 'nullable|string',
@@ -90,85 +107,109 @@ class PaymentController extends Controller
             $validated['status'] = $request->status;
             $validated['amount'] = $request->amount;
         } else {
-            // Patient is making a payment
+            // For patients, the payment status is automatically marked as 'paid'
             $validated['status'] = 'paid';
             $validated['payment_date'] = now();
         }
 
         $payment->update($validated);
 
-        return redirect()->route('payments.show', $payment)
-            ->with('success', 'Payment updated successfully.');
+        return redirect()->route('payments.show', $payment)->with('success', 'Payment updated successfully.');
     }
 
-    public function processPayment(Request $request, Payment $payment)
-    {
-        // This would integrate with a payment gateway in a real application
-        // For now, we'll just mark the payment as paid
+    // Process a payment (usually for patient or doctor to mark a payment as paid)
+// In your PaymentController.php
 
-        $validated = $request->validate([
-            'payment_method' => 'required|string',
-            'transaction_id' => 'nullable|string',
-        ]);
+public function processPayment(Request $request, Payment $payment)
+{
+    // Validate payment method
+    $validated = $request->validate([
+        'payment_method' => 'required|in:cash,bank_transfer', // Only allow cash or bank_transfer
+    ]);
 
+    // If payment is not already marked as 'paid', proceed with payment processing
+    if ($payment->status !== 'paid') {
+        // Update the payment with selected method and mark it as 'paid'
         $payment->update([
             'status' => 'paid',
             'payment_method' => $validated['payment_method'],
-            'transaction_id' => $validated['transaction_id'],
             'payment_date' => now(),
         ]);
-
-        return redirect()->route('payments.show', $payment)
-            ->with('success', 'Payment processed successfully.');
     }
 
+    // If transaction_id is provided, update the payment record with transaction ID
+    if ($request->filled('transaction_id')) {
+        $payment->update([
+            'transaction_id' => $request->transaction_id,
+        ]);
+    }
+
+    return redirect()->route('payments.show', $payment)
+        ->with('success', 'Payment processed successfully.');
+}
+
+
+    // Show payment confirmation page
+    public function confirmPayment(Payment $payment)
+    {
+        $user = Auth::user();
+
+        // Check if the user has permission to confirm the payment
+        if ($user->role === 'doctor' && $payment->doctor_id !== $user->id) {
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to process this payment.');
+        }
+
+        if ($user->role === 'patient' && $payment->patient_id !== $user->id) {
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to process this payment.');
+        }
+
+        return view('payments.confirm', compact('payment'));
+    }
+
+    // Generate invoice (PDF) for the payment
     public function generateInvoice(Payment $payment)
     {
         $user = Auth::user();
 
-        // Check if user has permission to view this payment
+        // Check if user can generate this invoice
         if ($user->role === 'doctor' && $payment->doctor_id !== $user->id) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to generate this invoice.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to generate this invoice.');
         }
 
         if ($user->role === 'patient' && $payment->patient_id !== $user->id) {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to generate this invoice.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to generate this invoice.');
         }
 
         $payment->load(['doctor', 'patient', 'appointment']);
 
-        // Generate PDF invoice using the DOMPDF library
+        // Generate PDF invoice using DomPDF
         $pdf = PDF::loadView('payments.invoice_pdf', compact('payment'));
-
-        // Set paper size and orientation
         $pdf->setPaper('a4', 'portrait');
 
-        // Generate unique filename for the invoice
+        // Return the generated PDF for download
         $filename = 'invoice-' . $payment->id . '-' . date('Y-m-d') . '.pdf';
 
-        // Return the PDF for download
         return $pdf->download($filename);
     }
 
+    // Generate payment reports (only accessible to admin or doctors)
     public function reports()
     {
         $user = Auth::user();
 
         // Only admin and doctors can view reports
         if ($user->role === 'patient') {
-            return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to view payment reports.');
+            return redirect()->route('dashboard')->with('error', 'You are not authorized to view payment reports.');
         }
 
         $query = Payment::query();
 
+        // Filter payments based on user role
         if ($user->role === 'doctor') {
             $query->where('doctor_id', $user->id);
         }
 
-        // Get payments by month
+        // Get monthly payment data
         $monthlyPayments = $query->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
             ->where('status', 'paid')
             ->whereNotNull('payment_date')
@@ -180,7 +221,7 @@ class PaymentController extends Controller
         // Get total revenue
         $totalRevenue = $query->where('status', 'paid')->sum('amount');
 
-        // Get pending payments
+        // Get pending payment amounts
         $pendingAmount = Payment::where('status', 'pending')->sum('amount');
 
         return view('payments.reports', compact('monthlyPayments', 'totalRevenue', 'pendingAmount'));

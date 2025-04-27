@@ -98,69 +98,76 @@ class AppointmentController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
 
-        $validated = $request->validate([
-            'doctor_id' => 'required|exists:users,id',
-            'appointment_date' => 'required|date|after:now',
-            'appointment_time' => 'required',
-            'notes' => 'nullable|string',
-            'fee' => 'required|numeric|min:0',
+    // Validate incoming data
+    $validated = $request->validate([
+        'doctor_id' => 'required|exists:users,id',
+        'appointment_date' => 'required|date|after:now',
+        'appointment_time' => 'required',
+        'notes' => 'nullable|string',
+        'fee' => 'required|numeric|min:0',
+    ]);
+
+    // Determine the patient ID
+    if ($user->role === 'admin') {
+        $request->validate([
+            'patient_id' => 'required|exists:users,id',
         ]);
-
-        if ($user->role === 'admin') {
-            $request->validate([
-                'patient_id' => 'required|exists:users,id',
-            ]);
-            $patientId = $request->patient_id;
-        } elseif ($user->role === 'doctor') {
-            $request->validate([
-                'patient_id' => 'required|exists:users,id',
-            ]);
-            $patientId = $request->patient_id;
-        } else {
-            $patientId = $user->id;
-        }
-
-        // Combine date and time
-        $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
-
-        // Check if the slot is available
-        $isBooked = Appointment::where('doctor_id', $validated['doctor_id'])
-            ->whereDate('appointment_date', $appointmentDateTime->toDateString())
-            ->whereTime('appointment_date', $appointmentDateTime->format('H:i'))
-            ->where('status', 'scheduled')
-            ->exists();
-
-        if ($isBooked) {
-            return back()
-                ->withErrors(['appointment_time' => 'This time slot is already booked.'])
-                ->withInput();
-        }
-
-        // Create appointment
-        $appointment = Appointment::create([
-            'patient_id' => $patientId,
-            'doctor_id' => $validated['doctor_id'],
-            'appointment_date' => $appointmentDateTime,
-            'notes' => $validated['notes'],
-            'fee' => $validated['fee'],
-            'status' => 'scheduled',
+        $patientId = $request->patient_id;
+    } elseif ($user->role === 'doctor') {
+        $request->validate([
+            'patient_id' => 'required|exists:users,id',
         ]);
-
-        // Create payment record
-        Payment::create([
-            'appointment_id' => $appointment->id,
-            'doctor_id' => $validated['doctor_id'],
-            'patient_id' => $patientId,
-            'amount' => $validated['fee'],
-            'status' => 'pending',
-        ]);
-
-        return redirect()->route('appointments.index')
-            ->with('success', 'Appointment scheduled successfully.');
+        $patientId = $request->patient_id;
+    } else {
+        $patientId = $user->id;  // Patient role: Use the logged-in user's ID
     }
+
+    // Combine appointment date and time
+    $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
+
+    // Check if the time slot is already booked
+    $isBooked = Appointment::where('doctor_id', $validated['doctor_id'])
+        ->whereDate('appointment_date', $appointmentDateTime->toDateString())
+        ->whereTime('appointment_date', $appointmentDateTime->format('H:i'))
+        ->where('status', 'scheduled')
+        ->exists();
+
+    if ($isBooked) {
+        return back()
+            ->withErrors(['appointment_time' => 'This time slot is already booked.'])
+            ->withInput();
+    }
+
+    // Create the appointment
+    $appointment = Appointment::create([
+        'patient_id' => $patientId,
+        'doctor_id' => $validated['doctor_id'],
+        'appointment_date' => $appointmentDateTime,
+        'notes' => $validated['notes'],
+        'fee' => $validated['fee'],
+        'status' => 'scheduled',
+    ]);
+
+    // Generate a unique transaction ID using timestamp and random string
+    $transactionId = 'TRX-' . strtoupper(bin2hex(random_bytes(5))) . '-' . now()->timestamp;
+
+    // Create a payment record with the generated transaction ID
+    Payment::create([
+        'appointment_id' => $appointment->id,
+        'doctor_id' => $validated['doctor_id'],
+        'patient_id' => $patientId,
+        'amount' => $validated['fee'],
+        'status' => 'pending',
+        'transaction_id' => $transactionId,  // Store the generated transaction ID
+    ]);
+
+    // Redirect to the appointments index page with a success message
+    return redirect()->route('appointments.index')
+        ->with('success', 'Appointment scheduled.');
+}
 
     public function show(Appointment $appointment)
     {

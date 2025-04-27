@@ -1,5 +1,3 @@
-{{-- resources/views/appointments/index.blade.php --}}
-
 <x-app-layout>
     <!-- Page header -->
     <x-slot name="header">

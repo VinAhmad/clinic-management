@@ -48,12 +48,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/patient/{patientId}/medical-history', [MedicalRecordController::class, 'patientHistory'])->name('medical-records.history');
 });
 
-// Payment routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth'])->group(function () {
+    // Payment routes
     Route::resource('payments', PaymentController::class);
-    Route::post('/payments/{payment}/process', [PaymentController::class, 'processPayment'])->name('payments.process');
-    Route::get('/payments/{payment}/invoice', [PaymentController::class, 'generateInvoice'])->name('payments.invoice');
-    Route::get('/payment-reports', [PaymentController::class, 'reports'])->name('payments.reports');
+    Route::get('/payments/{payment}/pay', [PaymentController::class, 'pay'])->name('payments.pay');
+
+    // Custom route for processing the payment (may also use resourceful routes if necessary)
+    Route::post('payments/{payment}/pay', [PaymentController::class, 'processPayment'])->name('payments.process');
+
+    // Custom route for confirming payment (if you need a confirmation step before payment)
+    Route::get('payments/{payment}/confirm', [PaymentController::class, 'confirmPayment'])->name('payments.confirm');
+
+    // Generate Invoice route
+    Route::get('payments/{payment}/invoice', [PaymentController::class, 'generateInvoice'])->name('payments.invoice');
+
+    // Reports route for admin/doctor
+    Route::get('payments/reports', [PaymentController::class, 'reports'])->name('payments.reports');
 });
+
+
 
 require __DIR__.'/auth.php';
