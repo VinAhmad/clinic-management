@@ -36,11 +36,26 @@ class AppointmentController extends Controller
 
         if ($user->role === 'admin') {
             $doctors = User::where('role', 'doctor')->get();
+            // Add availability status to each doctor
+            $doctors = $doctors->map(function($doctor) {
+                $doctor->hasSchedule = Schedule::where('doctor_id', $doctor->id)
+                    ->where('is_available', true)
+                    ->exists();
+                return $doctor;
+            });
+            
             $patients = User::where('role', 'patient')->get();
 
             return view('appointments.create', compact('doctors', 'patients'));
         } elseif ($user->role === 'patient') {
             $doctors = User::where('role', 'doctor')->get();
+            // Add availability status to each doctor
+            $doctors = $doctors->map(function($doctor) {
+                $doctor->hasSchedule = Schedule::where('doctor_id', $doctor->id)
+                    ->where('is_available', true)
+                    ->exists();
+                return $doctor;
+            });
 
             return view('appointments.create', compact('doctors'));
         } else {
@@ -63,7 +78,15 @@ class AppointmentController extends Controller
             ->first();
 
         if (!$schedule) {
-            return response()->json(['slots' => []]);
+            $hasAnySchedule = Schedule::where('doctor_id', $doctorId)
+                ->where('is_available', true)
+                ->exists();
+                
+            return response()->json([
+                'slots' => [],
+                'hasSchedule' => $hasAnySchedule,
+                'message' => 'No schedule available for this day'
+            ]);
         }
 
         $startTime = Carbon::parse($schedule->start_time);
@@ -74,7 +97,8 @@ class AppointmentController extends Controller
 
         while ($currentTime < $endTime) {
             $slotStart = $currentTime->format('H:i');
-            $slotEnd = $currentTime->addMinutes(30)->format('H:i');
+            $currentTime->addMinutes(30);
+            $slotEnd = $currentTime->format('H:i');
 
             // Check if slot is already booked
             $isBooked = Appointment::where('doctor_id', $doctorId)
@@ -93,7 +117,10 @@ class AppointmentController extends Controller
             }
         }
 
-        return response()->json(['slots' => $slots]);
+        return response()->json([
+            'slots' => $slots,
+            'hasSchedule' => true
+        ]);
     }
 
     public function store(Request $request)
@@ -105,21 +132,19 @@ class AppointmentController extends Controller
             'appointment_date' => 'required|date|after:now',
             'appointment_time' => 'required',
             'notes' => 'nullable|string',
-            'fee' => 'required|numeric|min:0',
         ]);
 
-        if ($user->role === 'admin') {
+        if ($user->role === 'admin' || $user->role === 'doctor') {
             $request->validate([
                 'patient_id' => 'required|exists:users,id',
+                'fee' => 'required|numeric|min:0',
             ]);
             $patientId = $request->patient_id;
-        } elseif ($user->role === 'doctor') {
-            $request->validate([
-                'patient_id' => 'required|exists:users,id',
-            ]);
-            $patientId = $request->patient_id;
+            $fee = $request->fee;
         } else {
             $patientId = $user->id;
+            // Set default fee or get from doctor's settings
+            $fee = $this->getDoctorDefaultFee($validated['doctor_id']);
         }
 
         // Combine date and time
@@ -128,7 +153,8 @@ class AppointmentController extends Controller
         // Check if the slot is available
         $isBooked = Appointment::where('doctor_id', $validated['doctor_id'])
             ->whereDate('appointment_date', $appointmentDateTime->toDateString())
-            ->whereTime('appointment_date', $appointmentDateTime->format('H:i'))
+            ->whereTime('appointment_date', '>=', $appointmentDateTime->format('H:i'))
+            ->whereTime('appointment_date', '<', $appointmentDateTime->addMinutes(30)->format('H:i'))
             ->where('status', 'scheduled')
             ->exists();
 
@@ -144,7 +170,7 @@ class AppointmentController extends Controller
             'doctor_id' => $validated['doctor_id'],
             'appointment_date' => $appointmentDateTime,
             'notes' => $validated['notes'],
-            'fee' => $validated['fee'],
+            'fee' => $fee,
             'status' => 'scheduled',
         ]);
 
@@ -153,12 +179,20 @@ class AppointmentController extends Controller
             'appointment_id' => $appointment->id,
             'doctor_id' => $validated['doctor_id'],
             'patient_id' => $patientId,
-            'amount' => $validated['fee'],
+            'amount' => $fee,
             'status' => 'pending',
         ]);
 
         return redirect()->route('appointments.index')
             ->with('success', 'Appointment scheduled successfully.');
+    }
+
+    // New helper method to get doctor's default fee
+    private function getDoctorDefaultFee($doctorId)
+    {
+        // This could be fetched from doctor's profile or system settings
+        // For now, we'll use a default value of 50
+        return 50.00;
     }
 
     public function show(Appointment $appointment)
@@ -187,19 +221,38 @@ class AppointmentController extends Controller
         $user = Auth::user();
 
         // Only allow updates if the appointment is still scheduled
-        if ($appointment->status !== 'scheduled') {
+        if ($appointment->status !== 'scheduled' && $request->status !== 'canceled') {
             return back()->withErrors(['status' => 'Cannot modify a completed or canceled appointment.']);
         }
 
+        // For doctors, only allow status update, not date/time/fee changes
+        if ($user->role === 'doctor') {
+            $validated = $request->validate([
+                'status' => 'required|in:scheduled,completed,canceled',
+                'notes' => 'nullable|string',
+            ]);
+            
+            // Use original appointment date and fee
+            $validated['appointment_date'] = $appointment->appointment_date;
+            $validated['fee'] = $appointment->fee;
+            
+            $appointment->update($validated);
+            
+            return redirect()->route('appointments.show', $appointment)
+                ->with('success', 'Appointment status updated successfully.');
+        }
+        
+        // For admin and patients, proceed with full validation
         $validated = $request->validate([
-            'appointment_date' => 'required|date|after:now',
+            'appointment_date' => 'required|date',
             'appointment_time' => 'required',
             'notes' => 'nullable|string',
-            'fee' => 'required|numeric|min:0',
         ]);
 
+        // Add fee validation depending on role
         if ($user->role === 'admin') {
             $request->validate([
+                'fee' => 'required|numeric|min:0',
                 'doctor_id' => 'required|exists:users,id',
                 'patient_id' => 'required|exists:users,id',
                 'status' => 'required|in:scheduled,completed,canceled',
@@ -207,13 +260,11 @@ class AppointmentController extends Controller
 
             $validated['doctor_id'] = $request->doctor_id;
             $validated['patient_id'] = $request->patient_id;
+            $validated['fee'] = $request->fee;
             $validated['status'] = $request->status;
-        } elseif ($user->role === 'doctor') {
-            $request->validate([
-                'status' => 'required|in:scheduled,completed,canceled',
-            ]);
-
-            $validated['status'] = $request->status;
+        } else {
+            // Patients can't change fee or status
+            $validated['fee'] = $appointment->fee;
         }
 
         // Combine date and time
@@ -222,10 +273,34 @@ class AppointmentController extends Controller
 
         // Check if the slot is available (if date/time changed)
         if ($appointmentDateTime != $appointment->appointment_date) {
+            // For patient and admin, validate date is in the future
+            if ($user->role !== 'doctor') {
+                if ($appointmentDateTime <= now()) {
+                    return back()
+                        ->withErrors(['appointment_date' => 'Appointment date must be in the future.'])
+                        ->withInput();
+                }
+            }
+            
+            // Verify the doctor has a schedule for this day
+            $dayOfWeek = strtolower($appointmentDateTime->format('l'));
+            $hasSchedule = Schedule::where('doctor_id', $appointment->doctor_id)
+                ->where('day', $dayOfWeek)
+                ->where('is_available', true)
+                ->exists();
+                
+            if (!$hasSchedule) {
+                return back()
+                    ->withErrors(['appointment_date' => 'Doctor has no schedule for this day.'])
+                    ->withInput();
+            }
+            
+            // Check for booking conflicts
             $isBooked = Appointment::where('doctor_id', $appointment->doctor_id)
                 ->where('id', '!=', $appointment->id)
                 ->whereDate('appointment_date', $appointmentDateTime->toDateString())
-                ->whereTime('appointment_date', $appointmentDateTime->format('H:i'))
+                ->whereTime('appointment_date', '>=', $appointmentDateTime->format('H:i'))
+                ->whereTime('appointment_date', '<', $appointmentDateTime->addMinutes(30)->format('H:i'))
                 ->where('status', 'scheduled')
                 ->exists();
 
@@ -239,8 +314,8 @@ class AppointmentController extends Controller
         // Update appointment
         $appointment->update($validated);
 
-        // Update payment amount if fee changed
-        if ($appointment->payment && $validated['fee'] != $appointment->payment->amount) {
+        // Update payment amount if fee changed and admin role
+        if ($user->role === 'admin' && $appointment->payment && $validated['fee'] != $appointment->payment->amount) {
             $appointment->payment->update(['amount' => $validated['fee']]);
         }
 

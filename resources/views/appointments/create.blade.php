@@ -43,9 +43,15 @@
                                 <select id="doctor_id" name="doctor_id" class="form-control @error('doctor_id') is-invalid @enderror" required>
                                     <option value="">Select Doctor</option>
                                     @foreach($doctors as $doctor)
+                                        @if($doctor->hasSchedule)
                                         <option value="{{ $doctor->id }}" {{ old('doctor_id') == $doctor->id ? 'selected' : '' }}>
-                                            Dr. {{ $doctor->name }} ({{ $doctor->specialization }})
+                                            Dr. {{ $doctor->name }} ({{ $doctor->specialization ?? 'General Practice' }})
                                         </option>
+                                        @else
+                                        <option value="{{ $doctor->id }}" disabled>
+                                            Dr. {{ $doctor->name }} ({{ $doctor->specialization ?? 'General Practice' }}) - No Schedule Available
+                                        </option>
+                                        @endif
                                     @endforeach
                                 </select>
 
@@ -54,6 +60,7 @@
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
+                                <small class="form-text text-muted">Doctors without available schedules are disabled</small>
                             </div>
                         </div>
                         @endif
@@ -69,6 +76,9 @@
                                         <strong>{{ $message }}</strong>
                                     </span>
                                 @enderror
+                                <div id="date_warning" class="text-danger small mt-1" style="display: none;">
+                                    The selected doctor has no schedule on this day.
+                                </div>
                             </div>
                         </div>
 
@@ -88,6 +98,7 @@
                             </div>
                         </div>
 
+                        @if(Auth::user()->role === 'admin' || Auth::user()->role === 'doctor')
                         <div class="form-group row mb-3">
                             <label for="fee" class="col-md-4 col-form-label text-md-right">{{ __('Consultation Fee') }}</label>
 
@@ -101,6 +112,9 @@
                                 @enderror
                             </div>
                         </div>
+                        @else
+                        <input type="hidden" name="fee" value="0">
+                        @endif
 
                         <div class="form-group row mb-3">
                             <label for="notes" class="col-md-4 col-form-label text-md-right">{{ __('Notes') }}</label>
@@ -118,7 +132,7 @@
 
                         <div class="form-group row mb-0">
                             <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" id="submit_btn">
                                     {{ __('Schedule Appointment') }}
                                 </button>
                                 <a href="{{ route('appointments.index') }}" class="btn btn-secondary">
@@ -133,7 +147,7 @@
     </div>
 </div>
 
-@section('scripts')
+@push('scripts')
 <script>
     $(document).ready(function() {
         // When doctor and date are selected, fetch available time slots
@@ -142,6 +156,10 @@
             const date = $('#appointment_date').val();
             
             if (doctorId && date) {
+                $('#appointment_time').prop('disabled', true);
+                $('#date_warning').hide();
+                $('#submit_btn').prop('disabled', false);
+                
                 $.ajax({
                     url: "{{ route('appointments.slots') }}",
                     type: "GET",
@@ -152,16 +170,22 @@
                     success: function(response) {
                         const timeSlotSelect = $('#appointment_time');
                         timeSlotSelect.empty();
-                        timeSlotSelect.prop('disabled', false);
                         
                         if (response.slots.length > 0) {
+                            timeSlotSelect.prop('disabled', false);
                             timeSlotSelect.append('<option value="">Select Time Slot</option>');
                             
                             response.slots.forEach(function(slot) {
                                 timeSlotSelect.append(`<option value="${slot.start}">${slot.formatted}</option>`);
                             });
                         } else {
+                            timeSlotSelect.prop('disabled', true);
                             timeSlotSelect.append('<option value="">No available slots</option>');
+                            
+                            if (response.hasSchedule === false) {
+                                $('#date_warning').show();
+                                $('#submit_btn').prop('disabled', true);
+                            }
                         }
                     }
                 });
@@ -171,6 +195,6 @@
         $('#doctor_id, #appointment_date').change(loadTimeSlots);
     });
 </script>
-@endsection
+@endpush
 
 @endsection

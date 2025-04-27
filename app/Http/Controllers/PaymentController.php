@@ -122,34 +122,40 @@ class PaymentController extends Controller
             ->with('success', 'Payment processed successfully.');
     }
 
-    public function generateInvoice(Payment $payment)
+    public function viewInvoice(Payment $payment, Request $request)
     {
         $user = Auth::user();
 
         // Check if user has permission to view this payment
         if ($user->role === 'doctor' && $payment->doctor_id !== $user->id) {
             return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to generate this invoice.');
+                ->with('error', 'You are not authorized to view this invoice.');
         }
 
         if ($user->role === 'patient' && $payment->patient_id !== $user->id) {
             return redirect()->route('dashboard')
-                ->with('error', 'You are not authorized to generate this invoice.');
+                ->with('error', 'You are not authorized to view this invoice.');
         }
 
         $payment->load(['doctor', 'patient', 'appointment']);
+        
+        // If download parameter is provided, generate and download PDF
+        if ($request->has('download')) {
+            // Generate PDF invoice using the DOMPDF library
+            $pdf = PDF::loadView('payments.invoice_pdf', compact('payment'));
 
-        // Generate PDF invoice using the DOMPDF library
-        $pdf = PDF::loadView('payments.invoice_pdf', compact('payment'));
+            // Set paper size and orientation
+            $pdf->setPaper('a4', 'portrait');
 
-        // Set paper size and orientation
-        $pdf->setPaper('a4', 'portrait');
+            // Generate unique filename for the invoice
+            $filename = 'invoice-' . $payment->id . '-' . date('Y-m-d') . '.pdf';
 
-        // Generate unique filename for the invoice
-        $filename = 'invoice-' . $payment->id . '-' . date('Y-m-d') . '.pdf';
+            // Return the PDF for download
+            return $pdf->download($filename);
+        }
 
-        // Return the PDF for download
-        return $pdf->download($filename);
+        // Otherwise just show the invoice view
+        return view('payments.invoice', compact('payment'));
     }
 
     public function reports()

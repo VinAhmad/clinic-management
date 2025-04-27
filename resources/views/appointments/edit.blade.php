@@ -70,6 +70,7 @@
                         </div>
                         @endif
 
+                        @if(Auth::user()->role === 'admin' || Auth::user()->role === 'patient')
                         <div class="form-group row mb-3">
                             <label for="appointment_date" class="col-md-4 col-form-label text-md-right">{{ __('Date') }}</label>
 
@@ -97,7 +98,18 @@
                                 @enderror
                             </div>
                         </div>
+                        @else
+                        <div class="form-group row mb-3">
+                            <label class="col-md-4 col-form-label text-md-right">{{ __('Date & Time') }}</label>
+                            <div class="col-md-6">
+                                <input type="text" readonly class="form-control-plaintext" value="{{ $appointment->appointment_date->format('M d, Y h:i A') }}">
+                                <input type="hidden" name="appointment_date" value="{{ $appointment->appointment_date->format('Y-m-d') }}">
+                                <input type="hidden" name="appointment_time" value="{{ $appointment->appointment_date->format('H:i') }}">
+                            </div>
+                        </div>
+                        @endif
 
+                        @if(Auth::user()->role === 'admin')
                         <div class="form-group row mb-3">
                             <label for="fee" class="col-md-4 col-form-label text-md-right">{{ __('Consultation Fee') }}</label>
 
@@ -111,6 +123,17 @@
                                 @enderror
                             </div>
                         </div>
+                        @elseif(Auth::user()->role === 'doctor')
+                        <div class="form-group row mb-3">
+                            <label class="col-md-4 col-form-label text-md-right">{{ __('Consultation Fee') }}</label>
+                            <div class="col-md-6">
+                                <input type="text" readonly class="form-control-plaintext" value="${{ number_format($appointment->fee, 2) }}">
+                                <input type="hidden" name="fee" value="{{ $appointment->fee }}">
+                            </div>
+                        </div>
+                        @else
+                        <input type="hidden" name="fee" value="{{ $appointment->fee }}">
+                        @endif
 
                         <div class="form-group row mb-3">
                             <label for="notes" class="col-md-4 col-form-label text-md-right">{{ __('Notes') }}</label>

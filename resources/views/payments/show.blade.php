@@ -80,6 +80,12 @@
                             <a href="{{ route('payments.index') }}" class="btn btn-secondary">
                                 <i class="fa fa-arrow-left"></i> Back to List
                             </a>
+                            
+                            @if($payment->status == 'Completed' || $payment->status == 'paid')
+                                <a href="{{ route('payments.view-invoice', $payment->id) }}" class="btn btn-primary">
+                                    <i class="fa fa-file-invoice"></i> Invoice
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

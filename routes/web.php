@@ -52,7 +52,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::resource('payments', PaymentController::class);
     Route::post('/payments/{payment}/process', [PaymentController::class, 'processPayment'])->name('payments.process');
-    Route::get('/payments/{payment}/invoice', [PaymentController::class, 'generateInvoice'])->name('payments.invoice');
+    Route::get('/payments/{payment}/view-invoice', [App\Http\Controllers\PaymentController::class, 'viewInvoice'])->name('payments.view-invoice');
     Route::get('/payment-reports', [PaymentController::class, 'reports'])->name('payments.reports');
 });
 

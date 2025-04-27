@@ -72,36 +72,50 @@ class DashboardController extends Controller
     {
         $doctor = Auth::user();
 
+        $todayDate = today();
         $todayAppointments = Appointment::with('patient')
             ->where('doctor_id', $doctor->id)
-            ->whereDate('appointment_date', today())
+            ->whereDate('appointment_date', $todayDate)
+            ->where('status', 'scheduled')
             ->orderBy('appointment_date')
             ->get();
 
         $upcomingAppointments = Appointment::with('patient')
             ->where('doctor_id', $doctor->id)
-            ->where('appointment_date', '>', today())
+            ->where('appointment_date', '>', now())
             ->where('status', 'scheduled')
             ->orderBy('appointment_date')
-            ->take(5)
+            ->take(10)  // Show more upcoming appointments
             ->get();
 
         $totalPatients = Appointment::where('doctor_id', $doctor->id)
             ->distinct('patient_id')
             ->count('patient_id');
 
+        $completedAppointments = Appointment::where('doctor_id', $doctor->id)
+            ->where('status', 'completed')
+            ->count();
+
         $totalAppointments = Appointment::where('doctor_id', $doctor->id)->count();
 
         $todaySchedule = Schedule::where('doctor_id', $doctor->id)
             ->where('day', strtolower(now()->format('l')))
             ->first();
+            
+        // Group upcoming appointments by date for better organization
+        $groupedAppointments = $upcomingAppointments->groupBy(function($appointment) {
+            return $appointment->appointment_date->format('Y-m-d');
+        });
 
         return view('dashboard.doctor', compact(
             'todayAppointments',
             'upcomingAppointments',
+            'groupedAppointments',
             'totalPatients',
+            'completedAppointments',
             'totalAppointments',
-            'todaySchedule'
+            'todaySchedule',
+            'todayDate'
         ));
     }
 

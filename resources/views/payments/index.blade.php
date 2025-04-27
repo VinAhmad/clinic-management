@@ -78,7 +78,7 @@
                                         @endif
                                         
                                         @if($payment->status === 'paid')
-                                            <a href="{{ route('payments.invoice', $payment) }}" class="btn btn-sm btn-success" title="Download Invoice">
+                                            <a href="{{ route('payments.view-invoice', $payment) }}" class="btn btn-sm btn-success" title="View Invoice">
                                                 <i class="fas fa-file-invoice"></i> Invoice
                                             </a>
                                         @endif
