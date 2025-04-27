@@ -8,10 +8,25 @@ use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
+    {
+        // Check if user has already seen the transition page in this session
+        if ($request->session()->has('dashboard_visited')) {
+            return $this->redirectToDashboard();
+        }
+
+        // Mark that the user has seen the transition page
+        $request->session()->put('dashboard_visited', true);
+
+        // Show the transition dashboard page
+        return view('dashboard');
+    }
+
+    public function redirectToDashboard()
     {
         $user = Auth::user();
 
