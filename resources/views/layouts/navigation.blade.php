@@ -16,10 +16,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    @if(Auth::user()->role === 'doctor')
-                        <x-nav-link :href="route('appointments.index')" :active="request()->routeIs('appointments.*')">
-                            {{ __('Appointments') }}
-                        </x-nav-link>
+                    @if(Auth::user()->rle === 'doctor')
                         <x-nav-link :href="route('medical-records.index')" :active="request()->routeIs('medical-records.*')">
                             {{ __('Medical Records') }}
                         </x-nav-link>
