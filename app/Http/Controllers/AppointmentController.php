@@ -24,7 +24,7 @@ class AppointmentController extends Controller
         }
 
         $appointments = $query->with(['doctor', 'patient'])
-            ->orderBy('appointment_date')
+            ->orderBy('id', 'asc')
             ->paginate(10);
 
         return view('appointments.index', compact('appointments'));

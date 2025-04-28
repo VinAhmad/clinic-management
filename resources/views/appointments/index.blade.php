@@ -31,7 +31,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>{{ __('ID') }}</th>
+                                <th>{{ __('#') }}</th>
                                 <th>{{ __('Date & Time') }}</th>
                                 <th>{{ __('Patient') }}</th>
                                 <th>{{ __('Doctor') }}</th>
@@ -41,9 +41,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($appointments as $appointment)
+                            @foreach($appointments as $index => $appointment)
                                 <tr>
-                                    <td>{{ $appointment->id }}</td>
+                                    <td>{{ $index + 1 }}</td>
                                     <td>{{ $appointment->appointment_date->format('M d, Y h:i A') }}</td>
                                     <td>{{ $appointment->patient->name }}</td>
                                     <td>Dr. {{ $appointment->doctor->name }}</td>
@@ -61,18 +61,18 @@
                                         <a href="{{ route('appointments.show', $appointment) }}" class="btn btn-sm btn-info" title="View">
                                             <i class="fas fa-eye"></i> View
                                         </a>
-                                        
+
                                         @if($appointment->status == 'scheduled')
                                             <a href="{{ route('appointments.edit', $appointment) }}" class="btn btn-sm btn-primary" title="Edit">
                                                 <i class="fas fa-edit"></i> Edit
                                             </a>
-                                            
+
                                             @if(Auth::user()->role == 'doctor')
                                                 <a href="{{ route('medical-records.create', ['appointment' => $appointment->id]) }}" class="btn btn-sm btn-success" title="Add Medical Record">
                                                     <i class="fas fa-notes-medical"></i> Record
                                                 </a>
                                             @endif
-                                            
+
                                             <form action="{{ route('appointments.destroy', $appointment) }}" method="POST" style="display:inline" onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
                                                 @csrf
                                                 @method('DELETE')
@@ -87,7 +87,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="d-flex justify-content-center mt-3">
                     {{ $appointments->links() }}
                 </div>
