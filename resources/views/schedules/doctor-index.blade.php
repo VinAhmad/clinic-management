@@ -54,14 +54,14 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('schedules.edit', $daySchedule) }}" class="btn btn-sm btn-primary" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ route('schedules.edit', $daySchedule) }}" class="btn btn-sm btn-primary me-1" title="Edit">
+                                                    <i class="fas fa-edit"></i> Edit
                                                 </a>
                                                 <form action="{{ route('schedules.destroy', $daySchedule) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this schedule?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-trash"></i> Delete
                                                     </button>
                                                 </form>
                                             </div>
@@ -69,7 +69,7 @@
                                     @else
                                         <td colspan="3" class="text-center">
                                             <a href="{{ route('schedules.create') }}?day={{ $day }}" class="btn btn-sm btn-outline-primary">
-                                                {{ __('Add schedule for this day') }}
+                                                <i class="fas fa-plus"></i> {{ __('Add schedule for this day') }}
                                             </a>
                                         </td>
                                     @endif

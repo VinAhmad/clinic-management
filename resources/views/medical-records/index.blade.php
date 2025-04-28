@@ -27,7 +27,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>{{ __('ID') }}</th>
+                                <th>{{ __('#') }}</th>
                                 <th>{{ __('Date') }}</th>
                                 <th>{{ __('Patient') }}</th>
                                 <th>{{ __('Doctor') }}</th>
@@ -36,9 +36,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($medicalRecords as $record)
+                            @foreach($medicalRecords as $index => $record)
                                 <tr>
-                                    <td>{{ $record->id }}</td>
+                                    <td>{{ $index + 1 }}</td>
                                     <td>{{ $record->created_at->format('M d, Y') }}</td>
                                     <td>{{ $record->patient->name }}</td>
                                     <td>Dr. {{ $record->doctor->name }}</td>
@@ -46,21 +46,21 @@
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a href="{{ route('medical-records.show', $record) }}" class="btn btn-sm btn-info" title="View">
-                                                <i class="fas fa-eye"></i>
+                                                <i class="fas fa-eye"></i> View
                                             </a>
-                                            
+
                                             @if(Auth::user()->role === 'admin' || (Auth::user()->role === 'doctor' && Auth::id() === $record->doctor_id))
-                                                <a href="{{ route('medical-records.edit', $record) }}" class="btn btn-sm btn-primary" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ route('medical-records.edit', $record) }}" class="btn btn-sm btn-primary ms-1" title="Edit">
+                                                    <i class="fas fa-edit"></i> Edit
                                                 </a>
                                             @endif
-                                            
+
                                             @if(Auth::user()->role === 'admin')
-                                                <form action="{{ route('medical-records.destroy', $record) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this record?')">
+                                                <form action="{{ route('medical-records.destroy', $record) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Are you sure you want to delete this record?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="fas fa-trash"></i> Delete
                                                     </button>
                                                 </form>
                                             @endif
@@ -71,7 +71,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="d-flex justify-content-center mt-3">
                     {{ $medicalRecords->links() }}
                 </div>

@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
 
             // Doctor
             [
-                'name' => 'Dr. Budi Santoso',
+                'name' => 'Budi Santoso',
                 'email' => 'dr.budi@clinic.com',
                 'email_verified_at' => now(),
                 'password' => bcrypt('Budi123'),
@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Dr. Siti Aminah',
+                'name' => 'Siti Aminah',
                 'email' => 'dr.siti@clinic.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
@@ -57,7 +57,7 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Dr. Ahmad Fauzi',
+                'name' => 'Ahmad Fauzi',
                 'email' => 'dr.ahmad@clinic.com',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
