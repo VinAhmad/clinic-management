@@ -73,12 +73,14 @@
                         </div>
 
                         <div class="form-group row mb-3">
-                            <label for="appointment_time" class="col-md-4 col-form-label text-md-right">{{ __('Time Slot') }}</label>
+                            <label for="appointment_time" class="col-md-4 col-form-label text-md-right">{{ __('Time') }}</label>
 
                             <div class="col-md-6">
-                                <select id="appointment_time" name="appointment_time" class="form-control @error('appointment_time') is-invalid @enderror" required disabled>
-                                    <option value="">Select Date & Doctor First</option>
-                                </select>
+                                <input id="appointment_time" type="time" class="form-control @error('appointment_time') is-invalid @enderror" name="appointment_time" value="{{ old('appointment_time') }}" required disabled>
+
+                                <div id="doctor-hours" class="mt-2 alert alert-info" style="display:none;">
+                                    <strong>Doctor's working hours:</strong> <span id="working-hours"></span>
+                                </div>
 
                                 @error('appointment_time')
                                     <span class="invalid-feedback" role="alert">
@@ -138,44 +140,96 @@
     </div>
 </div>
 
-@section('scripts')
-<script>
-    $(document).ready(function() {
-        // When doctor and date are selected, fetch available time slots
-        function loadTimeSlots() {
-            const doctorId = $('#doctor_id').val();
-            const date = $('#appointment_date').val();
-
-            if (doctorId && date) {
-                $.ajax({
-                    url: "{{ route('appointments.slots') }}",
-                    type: "GET",
-                    data: {
-                        doctor_id: doctorId,
-                        date: date
-                    },
-                    success: function(response) {
-                        const timeSlotSelect = $('#appointment_time');
-                        timeSlotSelect.empty();
-                        timeSlotSelect.prop('disabled', false);
-
-                        if (response.slots.length > 0) {
-                            timeSlotSelect.append('<option value="">Select Time Slot</option>');
-
-                            response.slots.forEach(function(slot) {
-                                timeSlotSelect.append(`<option value="${slot.start}">${slot.formatted}</option>`);
-                            });
-                        } else {
-                            timeSlotSelect.append('<option value="">No available slots</option>');
-                        }
-                    }
-                });
-            }
-        }
-
-        $('#doctor_id, #appointment_date').change(loadTimeSlots);
-    });
-    </script>
 @endsection
 
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form elements
+    const doctorSelect = document.getElementById('doctor_id');
+    const dateInput = document.getElementById('appointment_date');
+    const timeInput = document.getElementById('appointment_time');
+    const doctorHours = document.getElementById('doctor-hours');
+    const workingHoursSpan = document.getElementById('working-hours');
+
+    // Store schedule data from PHP
+    const schedulesData = @json($schedulesData ?? []);
+
+    function updateScheduleInfo() {
+        // Hide by default and disable time input
+        doctorHours.style.display = 'none';
+        timeInput.disabled = true;
+
+        // Check if both doctor and date are selected
+        if (!doctorSelect || !dateInput || !doctorSelect.value || !dateInput.value) {
+            return;
+        }
+
+        const doctorId = doctorSelect.value;
+        const date = dateInput.value;
+
+        // Get day of week from selected date
+        const selectedDate = new Date(date);
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayOfWeek = days[selectedDate.getDay()];
+
+        // Check if we have schedule data for this doctor and day
+        if (schedulesData[doctorId] && schedulesData[doctorId][dayOfWeek]) {
+            const schedule = schedulesData[doctorId][dayOfWeek];
+
+            // Format times for display
+            const startTime = formatTime(schedule.start_time);
+            const endTime = formatTime(schedule.end_time);
+
+            // Show schedule info
+            workingHoursSpan.textContent = `${startTime} - ${endTime}`;
+
+            // Enable time input only if doctor is available
+            if (schedule.is_available) {
+                timeInput.disabled = false;
+                doctorHours.className = 'mt-2 alert alert-info';
+                doctorHours.style.display = 'block';
+
+                // Set min and max time constraints based on doctor's hours
+                timeInput.min = schedule.start_time.substring(0, 5); // "09:00"
+                timeInput.max = schedule.end_time.substring(0, 5); // "17:00"
+            } else {
+                workingHoursSpan.textContent += " (Doctor not available on this day)";
+                doctorHours.className = 'mt-2 alert alert-warning';
+                doctorHours.style.display = 'block';
+                timeInput.disabled = true;
+            }
+        } else {
+            // No schedule found
+            workingHoursSpan.textContent = "No schedule available for this day";
+            doctorHours.className = 'mt-2 alert alert-warning';
+            doctorHours.style.display = 'block';
+            timeInput.disabled = true;
+        }
+    }
+
+    function formatTime(timeString) {
+        if (!timeString) return '';
+
+        // Convert "09:00:00" to "9:00 AM"
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12;
+        return `${formattedHour}:${minutes} ${ampm}`;
+    }
+
+    // Add event listeners
+    if (doctorSelect) {
+        doctorSelect.addEventListener('change', updateScheduleInfo);
+    }
+
+    if (dateInput) {
+        dateInput.addEventListener('change', updateScheduleInfo);
+    }
+
+    // Run on page load if values are already set (e.g., when validation fails)
+    updateScheduleInfo();
+});
+</script>
 @endsection
