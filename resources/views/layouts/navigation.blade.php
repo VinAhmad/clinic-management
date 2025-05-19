@@ -37,6 +37,9 @@
                         <x-nav-link :href="route('appointments.index')" :active="request()->routeIs('appointments.*')">
                             {{ __('Appointments') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('doctors.index')" :active="request()->routeIs('doctors.*')">
+                            {{ __('Doctors') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('payments.reports')" :active="request()->routeIs('payments.reports')">
                             {{ __('Reports') }}
                         </x-nav-link>
@@ -120,6 +123,9 @@
             @elseif(Auth::user()->role === 'admin')
                 <x-responsive-nav-link :href="route('appointments.index')" :active="request()->routeIs('appointments.*')">
                     {{ __('Appointments') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('doctors.index')" :active="request()->routeIs('doctors.*')">
+                    {{ __('Doctors') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('payments.reports')" :active="request()->routeIs('payments.reports')">
                     {{ __('Reports') }}

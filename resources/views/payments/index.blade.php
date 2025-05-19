@@ -70,19 +70,19 @@
                                         <a href="{{ route('payments.show', $payment) }}" class="btn btn-sm btn-info" title="View">
                                             <i class="fas fa-eye"></i> View
                                         </a>
-                                        
+
                                         @if(Auth::user()->role === 'admin' || (Auth::user()->role === 'patient' && Auth::id() === $payment->patient_id && $payment->status === 'pending'))
                                             <a href="{{ route('payments.edit', $payment) }}" class="btn btn-sm btn-primary" title="Edit">
                                                 <i class="fas fa-edit"></i> Edit
                                             </a>
                                         @endif
-                                        
+
                                         @if($payment->status === 'paid')
                                             <a href="{{ route('payments.view-invoice', $payment) }}" class="btn btn-sm btn-success" title="View Invoice">
                                                 <i class="fas fa-file-invoice"></i> Invoice
                                             </a>
                                         @endif
-                                        
+
                                         @if(Auth::user()->role === 'patient' && $payment->status === 'pending')
                                             <a href="{{ route('payments.process', $payment) }}" class="btn btn-sm btn-warning" title="Pay Now">
                                                 <i class="fas fa-credit-card"></i> Pay Now
@@ -94,7 +94,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="d-flex justify-content-center mt-3">
                     {{ $payments->links() }}
                 </div>

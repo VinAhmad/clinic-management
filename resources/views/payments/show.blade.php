@@ -13,17 +13,17 @@
                         <div class="col-md-4 text-md-right font-weight-bold">ID:</div>
                         <div class="col-md-8">{{ $payment->id }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Patient:</div>
                         <div class="col-md-8">{{ $payment->patient->name ?? 'N/A' }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Doctor:</div>
                         <div class="col-md-8">{{ $payment->doctor->name ?? 'N/A' }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Appointment:</div>
                         <div class="col-md-8">
@@ -34,22 +34,22 @@
                             @endif
                         </div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Transaction ID:</div>
                         <div class="col-md-8">{{ $payment->transaction_id }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Amount:</div>
                         <div class="col-md-8">${{ number_format($payment->amount, 2) }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Payment Method:</div>
                         <div class="col-md-8">{{ $payment->payment_method }}</div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Status:</div>
                         <div class="col-md-8">
@@ -66,12 +66,12 @@
                             @endif
                         </div>
                     </div>
-                    
+
                     <div class="row mb-3">
                         <div class="col-md-4 text-md-right font-weight-bold">Payment Date:</div>
                         <div class="col-md-8">{{ $payment->payment_date }}</div>
                     </div>
-                    
+
                     <div class="row mt-4">
                         <div class="col-md-8 offset-md-4">
                             <a href="{{ route('payments.edit', $payment->id) }}" class="btn btn-warning">
@@ -80,7 +80,7 @@
                             <a href="{{ route('payments.index') }}" class="btn btn-secondary">
                                 <i class="fa fa-arrow-left"></i> Back to List
                             </a>
-                            
+
                             @if($payment->status == 'Completed' || $payment->status == 'paid')
                                 <a href="{{ route('payments.view-invoice', $payment->id) }}" class="btn btn-primary">
                                     <i class="fa fa-file-invoice"></i> Invoice

@@ -7,6 +7,7 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\PDF;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -138,7 +139,7 @@ class PaymentController extends Controller
         }
 
         $payment->load(['doctor', 'patient', 'appointment']);
-        
+
         // If download parameter is provided, generate and download PDF
         if ($request->has('download')) {
             // Generate PDF invoice using the DOMPDF library
@@ -174,14 +175,28 @@ class PaymentController extends Controller
             $query->where('doctor_id', $user->id);
         }
 
-        // Get payments by month
-        $monthlyPayments = $query->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
-            ->where('status', 'paid')
-            ->whereNotNull('payment_date')
-            ->groupBy('year', 'month')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->get();
+        // Get payments by month - using SQLite compatible functions
+        $connection = DB::connection()->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
+        if ($connection === 'sqlite') {
+            // SQLite version
+            $monthlyPayments = $query->selectRaw("strftime('%m', payment_date) as month, strftime('%Y', payment_date) as year, SUM(amount) as total")
+                ->where('status', 'paid')
+                ->whereNotNull('payment_date')
+                ->groupBy('year', 'month')
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->get();
+        } else {
+            // MySQL version
+            $monthlyPayments = $query->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
+                ->where('status', 'paid')
+                ->whereNotNull('payment_date')
+                ->groupBy('year', 'month')
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->get();
+        }
 
         // Get total revenue
         $totalRevenue = $query->where('status', 'paid')->sum('amount');

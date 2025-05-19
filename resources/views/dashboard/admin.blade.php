@@ -128,8 +128,8 @@
                     <div class="p-6">
                         <h3 class="font-semibold text-gray-800 mb-3">Manage Doctors</h3>
                         <div class="space-y-2">
-                            <a href="#" class="block text-indigo-600 hover:text-indigo-800">View All Doctors</a>
-                            <a href="#" class="block text-indigo-600 hover:text-indigo-800">Add New Doctor</a>
+                            <a href="{{ route('doctors.index') }}" class="block text-indigo-600 hover:text-indigo-800">View All Doctors</a>
+                            <a href="{{ route('doctors.create') }}" class="block text-indigo-600 hover:text-indigo-800">Add New Doctor</a>
                         </div>
                     </div>
                 </div>

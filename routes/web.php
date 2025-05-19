@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
@@ -54,6 +55,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/payments/{payment}/process', [PaymentController::class, 'processPayment'])->name('payments.process');
     Route::get('/payments/{payment}/view-invoice', [App\Http\Controllers\PaymentController::class, 'viewInvoice'])->name('payments.view-invoice');
     Route::get('/payment-reports', [PaymentController::class, 'reports'])->name('payments.reports');
+});
+
+// Doctor management routes (admin only)
+Route::middleware(['auth'])->group(function () {
+    Route::resource('doctors', DoctorController::class);
 });
 
 require __DIR__.'/auth.php';
