@@ -169,41 +169,143 @@ class PaymentController extends Controller
                 ->with('error', 'You are not authorized to view payment reports.');
         }
 
-        $query = Payment::query();
+        try {
+            $query = Payment::query();
 
-        if ($user->role === 'doctor') {
-            $query->where('doctor_id', $user->id);
+            if ($user->role === 'doctor') {
+                $query->where('doctor_id', $user->id);
+            }
+
+            // Get total revenue from paid payments with null check
+            $totalRevenue = (clone $query)->where('status', 'paid')->sum('amount') ?? 0;
+
+            // Get pending payments amount with separate query for accuracy
+            $pendingQuery = Payment::query();
+            if ($user->role === 'doctor') {
+                $pendingQuery->where('doctor_id', $user->id);
+            }
+            $pendingAmount = $pendingQuery->where('status', 'pending')->sum('amount') ?? 0;
+
+            // Get payments by month with improved database compatibility
+            $connection = DB::connection()->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+
+            $monthlyPayments = collect();
+
+            if ($connection === 'sqlite') {
+                // SQLite version with better error handling
+                $monthlyPayments = (clone $query)
+                    ->selectRaw("CAST(strftime('%m', payment_date) AS INTEGER) as month, CAST(strftime('%Y', payment_date) AS INTEGER) as year, SUM(amount) as total")
+                    ->where('status', 'paid')
+                    ->whereNotNull('payment_date')
+                    ->where('payment_date', '!=', '')
+                    ->where('payment_date', '!=', '0000-00-00')
+                    ->groupByRaw("strftime('%Y', payment_date), strftime('%m', payment_date)")
+                    ->orderByRaw("strftime('%Y', payment_date) DESC, strftime('%m', payment_date) DESC")
+                    ->get();
+            } else {
+                // MySQL version with better error handling
+                $monthlyPayments = (clone $query)
+                    ->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
+                    ->where('status', 'paid')
+                    ->whereNotNull('payment_date')
+                    ->where('payment_date', '!=', '0000-00-00')
+                    ->groupByRaw('YEAR(payment_date), MONTH(payment_date)')
+                    ->orderByRaw('YEAR(payment_date) DESC, MONTH(payment_date) DESC')
+                    ->get();
+            }
+
+            // Ensure numeric values and filter out invalid data
+            $monthlyPayments = $monthlyPayments->filter(function ($payment) {
+                return $payment->month >= 1 && $payment->month <= 12 && $payment->year > 0;
+            })->map(function ($payment) {
+                $payment->month = (int) $payment->month;
+                $payment->year = (int) $payment->year;
+                $payment->total = (float) $payment->total;
+                return $payment;
+            });
+
+        } catch (\Exception $e) {
+            // If there's an error with the query, provide default values
+            $monthlyPayments = collect();
+            $totalRevenue = 0;
+            $pendingAmount = 0;
+
+            // Log the error for debugging
+            \Log::error('Error in payment reports: ' . $e->getMessage());
+
+            // Optionally show a user-friendly message
+            session()->flash('warning', 'Some report data may be incomplete due to a system issue.');
         }
-
-        // Get payments by month - using SQLite compatible functions
-        $connection = DB::connection()->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
-
-        if ($connection === 'sqlite') {
-            // SQLite version
-            $monthlyPayments = $query->selectRaw("strftime('%m', payment_date) as month, strftime('%Y', payment_date) as year, SUM(amount) as total")
-                ->where('status', 'paid')
-                ->whereNotNull('payment_date')
-                ->groupBy('year', 'month')
-                ->orderBy('year', 'desc')
-                ->orderBy('month', 'desc')
-                ->get();
-        } else {
-            // MySQL version
-            $monthlyPayments = $query->selectRaw('MONTH(payment_date) as month, YEAR(payment_date) as year, SUM(amount) as total')
-                ->where('status', 'paid')
-                ->whereNotNull('payment_date')
-                ->groupBy('year', 'month')
-                ->orderBy('year', 'desc')
-                ->orderBy('month', 'desc')
-                ->get();
-        }
-
-        // Get total revenue
-        $totalRevenue = $query->where('status', 'paid')->sum('amount');
-
-        // Get pending payments
-        $pendingAmount = Payment::where('status', 'pending')->sum('amount');
 
         return view('payments.reports', compact('monthlyPayments', 'totalRevenue', 'pendingAmount'));
+    }
+
+    public function create()
+    {
+        $user = Auth::user();
+
+        // Only admin can create payments directly
+        if ($user->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to create payments.');
+        }
+
+        // Get appointments that don't have payments yet
+        $appointments = Appointment::with(['patient', 'doctor'])
+            ->whereDoesntHave('payment')
+            ->where('status', 'scheduled')
+            ->orderBy('appointment_date', 'desc')
+            ->get();
+
+        return view('payments.create', compact('appointments'));
+    }
+
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+
+        // Only admin can create payments directly
+        if ($user->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to create payments.');
+        }
+
+        $validated = $request->validate([
+            'appointment_id' => 'required|exists:appointments,id',
+            'amount' => 'required|numeric|min:0',
+            'payment_method' => 'required|string',
+            'transaction_id' => 'nullable|string',
+            'status' => 'required|in:pending,paid,refunded,failed',
+        ]);
+
+        // Get the appointment to extract patient and doctor info
+        $appointment = Appointment::with(['patient', 'doctor'])->findOrFail($validated['appointment_id']);
+
+        // Check if payment already exists for this appointment
+        if ($appointment->payment) {
+            return redirect()->route('payments.index')
+                ->with('error', 'Payment already exists for this appointment.');
+        }
+
+        // Create the payment
+        $paymentData = [
+            'appointment_id' => $validated['appointment_id'],
+            'patient_id' => $appointment->patient_id,
+            'doctor_id' => $appointment->doctor_id,
+            'amount' => $validated['amount'],
+            'payment_method' => $validated['payment_method'],
+            'transaction_id' => $validated['transaction_id'],
+            'status' => $validated['status'],
+        ];
+
+        // Set payment_date if status is paid
+        if ($validated['status'] === 'paid') {
+            $paymentData['payment_date'] = now();
+        }
+
+        $payment = Payment::create($paymentData);
+
+        return redirect()->route('payments.show', $payment)
+            ->with('success', 'Payment created successfully.');
     }
 }
