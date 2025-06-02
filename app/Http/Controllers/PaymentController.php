@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\PDF;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -23,7 +24,7 @@ class PaymentController extends Controller
         }
 
         $payments = $query->with(['doctor', 'patient', 'appointment'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->paginate(10);
 
         return view('payments.index', compact('payments'));
@@ -231,7 +232,7 @@ class PaymentController extends Controller
             $pendingAmount = 0;
 
             // Log the error for debugging
-            \Log::error('Error in payment reports: ' . $e->getMessage());
+            Log::error('Error in payment reports: ' . $e->getMessage());
 
             // Optionally show a user-friendly message
             session()->flash('warning', 'Some report data may be incomplete due to a system issue.');

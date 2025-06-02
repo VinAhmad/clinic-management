@@ -37,9 +37,9 @@
                         <label for="appointment_id" class="block text-sm font-medium text-gray-700 mb-2">
                             Appointment <span class="text-red-500">*</span>
                         </label>
-                        <select id="appointment_id"
-                                name="appointment_id"
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('appointment_id') border-red-500 @enderror"
+                        <select id="appointment_id" 
+                                name="appointment_id" 
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('appointment_id') border-red-500 @enderror" 
                                 required>
                             <option value="">Select an appointment</option>
                             @foreach($appointments as $appointment)
@@ -58,13 +58,13 @@
                         <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
                             Amount ($) <span class="text-red-500">*</span>
                         </label>
-                        <input id="amount"
-                               type="number"
-                               step="0.01"
-                               min="0"
-                               name="amount"
-                               value="{{ old('amount') }}"
-                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('amount') border-red-500 @enderror"
+                        <input id="amount" 
+                               type="number" 
+                               step="0.01" 
+                               min="0" 
+                               name="amount" 
+                               value="{{ old('amount') }}" 
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('amount') border-red-500 @enderror" 
                                placeholder="0.00"
                                required>
                         @error('amount')
@@ -77,9 +77,9 @@
                         <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-2">
                             Payment Method <span class="text-red-500">*</span>
                         </label>
-                        <select id="payment_method"
-                                name="payment_method"
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('payment_method') border-red-500 @enderror"
+                        <select id="payment_method" 
+                                name="payment_method" 
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('payment_method') border-red-500 @enderror" 
                                 required>
                             <option value="">Select payment method</option>
                             <option value="credit_card" {{ old('payment_method') == 'credit_card' ? 'selected' : '' }}>Credit Card</option>
@@ -98,11 +98,11 @@
                         <label for="transaction_id" class="block text-sm font-medium text-gray-700 mb-2">
                             Transaction ID
                         </label>
-                        <input id="transaction_id"
-                               type="text"
-                               name="transaction_id"
-                               value="{{ old('transaction_id') }}"
-                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('transaction_id') border-red-500 @enderror"
+                        <input id="transaction_id" 
+                               type="text" 
+                               name="transaction_id" 
+                               value="{{ old('transaction_id') }}" 
+                               class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('transaction_id') border-red-500 @enderror" 
                                placeholder="Optional transaction reference">
                         @error('transaction_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -114,9 +114,9 @@
                         <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
                             Payment Status <span class="text-red-500">*</span>
                         </label>
-                        <select id="status"
-                                name="status"
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('status') border-red-500 @enderror"
+                        <select id="status" 
+                                name="status" 
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 @error('status') border-red-500 @enderror" 
                                 required>
                             <option value="pending" {{ old('status', 'pending') == 'pending' ? 'selected' : '' }}>Pending</option>
                             <option value="paid" {{ old('status') == 'paid' ? 'selected' : '' }}>Paid</option>
@@ -130,11 +130,11 @@
 
                     <!-- Form Actions -->
                     <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                        <a href="{{ route('payments.index') }}"
+                        <a href="{{ route('payments.index') }}" 
                            class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200">
                             Cancel
                         </a>
-                        <button type="submit"
+                        <button type="submit" 
                                 class="px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition duration-200">
                             Create Payment
                         </button>
