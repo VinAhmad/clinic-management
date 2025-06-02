@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Appointment;
+use App\Models\Schedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 
@@ -15,60 +18,78 @@ class DoctorController extends Controller
         return view('doctors.index', compact('doctors'));
     }
 
+    public function show(User $doctor)
+    {
+        // Ensure the user is actually a doctor
+        if ($doctor->role !== 'doctor') {
+            return redirect()->route('doctors.index')
+                ->with('error', 'User not found or not a doctor.');
+        }
+
+        // Load appointments for this doctor
+        $appointments = Appointment::where('doctor_id', $doctor->id)
+            ->with(['patient'])
+            ->orderBy('appointment_date', 'desc')
+            ->get();
+
+        // Load schedules for this doctor
+        $schedules = Schedule::where('doctor_id', $doctor->id)
+            ->orderBy('day')
+            ->get();
+
+        return view('doctors.show', compact('doctor', 'appointments', 'schedules'));
+    }
+
     public function create()
     {
+        // Only admin can create doctors
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to create doctors.');
+        }
+
         return view('doctors.create');
     }
 
     public function store(Request $request)
     {
+        // Only admin can create doctors
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to create doctors.');
+        }
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'phone' => ['required', 'string', 'max:20'],
-            'gender' => ['required', 'in:male,female,other'],
-            'address' => ['required', 'string'],
-            'specialization' => ['required', 'string'],
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'specialization' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:male,female',
+            'address' => 'nullable|string|max:500',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'phone' => $validated['phone'],
-            'gender' => $validated['gender'],
-            'address' => $validated['address'],
-            'specialization' => $validated['specialization'],
-            'role' => 'doctor',
-        ]);
+        $validated['role'] = 'doctor';
+        $validated['password'] = Hash::make($validated['password']);
+
+        User::create($validated);
 
         return redirect()->route('doctors.index')
             ->with('success', 'Doctor created successfully.');
     }
 
-    public function show(User $doctor)
-    {
-        // Ensure we're only showing doctors
-        if ($doctor->role !== 'doctor') {
-            abort(404);
-        }
-
-        $appointments = $doctor->doctorAppointments()
-            ->orderBy('appointment_date', 'desc')
-            ->take(5)
-            ->get();
-
-        $schedules = $doctor->schedules;
-
-        return view('doctors.show', compact('doctor', 'appointments', 'schedules'));
-    }
-
     public function edit(User $doctor)
     {
-        // Ensure we're only editing doctors
+        // Only admin can edit doctors
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to edit doctors.');
+        }
+
+        // Ensure the user is actually a doctor
         if ($doctor->role !== 'doctor') {
-            abort(404);
+            return redirect()->route('doctors.index')
+                ->with('error', 'User not found or not a doctor.');
         }
 
         return view('doctors.edit', compact('doctor'));
@@ -76,47 +97,47 @@ class DoctorController extends Controller
 
     public function update(Request $request, User $doctor)
     {
-        // Ensure we're only updating doctors
-        if ($doctor->role !== 'doctor') {
-            abort(404);
+        // Only admin can update doctors
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to update doctors.');
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $doctor->id],
-            'phone' => ['required', 'string', 'max:20'],
-            'gender' => ['required', 'in:male,female,other'],
-            'address' => ['required', 'string'],
-            'specialization' => ['required', 'string'],
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $doctor->id,
+            'specialization' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:male,female',
+            'address' => 'nullable|string|max:500',
         ]);
 
-        // Optional password update
+        // Only update password if provided
         if ($request->filled('password')) {
             $request->validate([
-                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+                'password' => 'required|string|min:8|confirmed',
             ]);
             $validated['password'] = Hash::make($request->password);
         }
 
         $doctor->update($validated);
 
-        return redirect()->route('doctors.index')
+        return redirect()->route('doctors.show', $doctor)
             ->with('success', 'Doctor updated successfully.');
     }
 
     public function destroy(User $doctor)
     {
-        // Ensure we're only deleting doctors
-        if ($doctor->role !== 'doctor') {
-            abort(404);
+        // Only admin can delete doctors
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')
+                ->with('error', 'You are not authorized to delete doctors.');
         }
 
-        // Check if the doctor has related records
-        $hasAppointments = $doctor->doctorAppointments()->exists();
-        $hasMedicalRecords = $doctor->doctorMedicalRecords()->exists();
-
-        if ($hasAppointments || $hasMedicalRecords) {
-            return back()->with('error', 'Cannot delete this doctor because they have related records.');
+        // Ensure the user is actually a doctor
+        if ($doctor->role !== 'doctor') {
+            return redirect()->route('doctors.index')
+                ->with('error', 'User not found or not a doctor.');
         }
 
         $doctor->delete();

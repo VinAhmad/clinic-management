@@ -24,7 +24,15 @@ class ScheduleController extends Controller
 
     public function showDoctorSchedules(User $doctor)
     {
-        $schedules = Schedule::where('doctor_id', $doctor->id)->get();
+        // Ensure the user is actually a doctor
+        if ($doctor->role !== 'doctor') {
+            return redirect()->route('doctors.index')
+                ->with('error', 'User not found or not a doctor.');
+        }
+
+        $schedules = Schedule::where('doctor_id', $doctor->id)
+            ->orderBy('day')
+            ->get();
 
         return view('schedules.show', compact('doctor', 'schedules'));
     }

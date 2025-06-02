@@ -79,7 +79,6 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'payment_method' => 'required|string',
-            'transaction_id' => 'nullable|string',
         ]);
 
         // Admin can update status and amount
@@ -110,13 +109,11 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'payment_method' => 'required|string',
-            'transaction_id' => 'nullable|string',
         ]);
 
         $payment->update([
             'status' => 'paid',
             'payment_method' => $validated['payment_method'],
-            'transaction_id' => $validated['transaction_id'],
             'payment_date' => now(),
         ]);
 
@@ -273,13 +270,11 @@ class PaymentController extends Controller
 
         $validated = $request->validate([
             'appointment_id' => 'required|exists:appointments,id',
-            'amount' => 'required|numeric|min:0',
             'payment_method' => 'required|string',
-            'transaction_id' => 'nullable|string',
             'status' => 'required|in:pending,paid,refunded,failed',
         ]);
 
-        // Get the appointment to extract patient and doctor info
+        // Get the appointment to extract patient, doctor info and fee
         $appointment = Appointment::with(['patient', 'doctor'])->findOrFail($validated['appointment_id']);
 
         // Check if payment already exists for this appointment
@@ -293,9 +288,8 @@ class PaymentController extends Controller
             'appointment_id' => $validated['appointment_id'],
             'patient_id' => $appointment->patient_id,
             'doctor_id' => $appointment->doctor_id,
-            'amount' => $validated['amount'],
+            'amount' => $appointment->fee, // Use appointment's consultation fee
             'payment_method' => $validated['payment_method'],
-            'transaction_id' => $validated['transaction_id'],
             'status' => $validated['status'],
         ];
 
